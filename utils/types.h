@@ -8,11 +8,14 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
+#include <array>
 namespace chis {
 using std::cout;
 using std::endl;
 template <typename T>
 using vector_type = std::vector<T>;
+template <typename T, size_t size>
+using array_type = std::array<T, size>;
 template <typename T>
 using set_type = std::set<T>;
 template <typename T>

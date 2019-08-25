@@ -38,8 +38,8 @@ class GomokuBitBoard {
             (bsize_t(heng[HENG_REAL(i, j, size, offset) * 2 + 1]) << 1) +
             bsize_t(heng[HENG_REAL(i, j, size, offset) * 2]));
     }
-    vector_type<bcell_t> get_real_all(bsize_t i, bsize_t j) const {
-        vector_type<bcell_t> ret = {
+    array_type<bcell_t, 4> get_real_all(bsize_t i, bsize_t j) const {
+        return {
             BOARD_VAL(
                 (bsize_t(heng[HENG_REAL(i, j, size, offset) * 2 + 1]) << 1) +
                 bsize_t(heng[HENG_REAL(i, j, size, offset) * 2])),
@@ -52,7 +52,6 @@ class GomokuBitBoard {
             BOARD_VAL((bsize_t(na[NA_REAL(i, j, size, offset) * 2 + 1]) << 1) +
                       bsize_t(na[NA_REAL(i, j, size, offset) * 2])),
         };
-        return ret;
     }
 
    public:
