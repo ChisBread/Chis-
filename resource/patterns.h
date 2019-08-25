@@ -3,7 +3,7 @@
 namespace chis {
 extern uint32_t patterns[2724];
 class GomokuPatterns {
-  public:
+   public:
     GomokuPatterns() {
         pattern_map = vector_type<uint8_t>(1 << 23, 0);
         build();
@@ -36,7 +36,7 @@ class GomokuPatterns {
                 paddinglen = 11 - i / 2;
             }
         }
-        pat &= (uint32_t(1) << (23 - paddinglen * 2)) - 1; //去掉左边界标志
+        pat &= (uint32_t(1) << (23 - paddinglen * 2)) - 1;  //去掉左边界标志
         vector_type<uint32_t> ret;
         //左右填充
         for (size_t i = 0; i <= paddinglen; ++i) {
@@ -45,8 +45,8 @@ class GomokuPatterns {
             set_type<uint32_t> rightPadding = arrangement_padding(rightlen);
             for (uint32_t l : leftPadding) {
                 for (uint32_t r : rightPadding) {
-                    uint32_t ret_pat = pat
-                                       << uint32_t(rightlen * 2); //腾出右边空间
+                    uint32_t ret_pat =
+                        pat << uint32_t(rightlen * 2);  //腾出右边空间
                     // l为有效边界时，边界必须是INV或者WHT. l == 0x0
                     // 时，意味着左侧不填充
                     if ((l & uint32_t(0x3)) == uint32_t(0x3) ||
@@ -82,7 +82,7 @@ class GomokuPatterns {
         }
     }
 
-  public:
+   public:
     vector_type<uint8_t> pattern_map;
 };
-} // namespace chis
+}  // namespace chis

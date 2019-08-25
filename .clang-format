@@ -1,5 +1,5 @@
 # Run manually to reformat:
 # find ./ | grep -P  ".*\.(cpp|hpp|h)$" | grep -v "thirdparty" |xargs clang-format -i
 Language:        Cpp
-BasedOnStyle:  LLVM
+BasedOnStyle:  Google
 IndentWidth: 4

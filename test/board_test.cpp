@@ -1,6 +1,6 @@
+#include <string>
 #include "board/gomoku.hpp"
 #include "gtest/gtest.h"
-#include <string>
 using namespace std;
 const static chis::bsize_t SIZE = 15;
 const static chis::bsize_t OFFSET = 5;

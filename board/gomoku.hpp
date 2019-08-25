@@ -3,8 +3,9 @@
 #include "board/types.h"
 namespace chis {
 //五子棋位棋盘-基本操作
-template <bsize_t size = 15, bsize_t offset = 5> class GomokuBitBoard {
-  public:
+template <bsize_t size = 15, bsize_t offset = 5>
+class GomokuBitBoard {
+   public:
     //相对坐标
     void set(bsize_t i, bsize_t j, const bcell_t &val) {
         heng[HENG(i, j, size, offset) * 2] = val[0];
@@ -54,7 +55,7 @@ template <bsize_t size = 15, bsize_t offset = 5> class GomokuBitBoard {
         return ret;
     }
 
-  public:
+   public:
     GomokuBitBoard() {
         for (size_t i = 0; i < size + offset * 2; ++i) {
             for (size_t j = 0; j < offset; ++j) {
@@ -66,7 +67,7 @@ template <bsize_t size = 15, bsize_t offset = 5> class GomokuBitBoard {
         }
     }
 
-  public:
+   public:
     bitset_type<HENG_MAXLEN(size, offset) * 2> heng;
     bitset_type<SHU_MAXLEN(size, offset) * 2> shu;
     bitset_type<PIE_MAXLEN(size, offset) * 2> pie;
@@ -76,19 +77,20 @@ template <bsize_t size = 15, bsize_t offset = 5> class GomokuBitBoard {
 using pinfo_t = uint8_t;
 static const pinfo_t WON = 0x80;
 
-template <uint32_t offset = 5> class PatternMap {
-  public:
+template <uint32_t offset = 5>
+class PatternMap {
+   public:
     struct PointPattern {
         uint32_t pattern[4];
     };
 
-  public:
+   public:
     static pinfo_t is_five(uint32_t pattern) {
-        const uint32_t blk_five = 0x2AA; // 1010101010
+        const uint32_t blk_five = 0x2AA;  // 1010101010
         for (uint32_t i = 0; i <= 12; i += 2) {
             uint32_t bfive = blk_five << i;
             if ((bfive & pattern) == bfive) {
-                return WON; // 1000 0000
+                return WON;  // 1000 0000
             }
         }
         return 0;
@@ -108,27 +110,28 @@ template <uint32_t offset = 5> class PatternMap {
         return false;
     }
 
-  public:
+   public:
     // 0代表未初始化
     uint8_t patterns[1U << ((offset * 2U + 1U) * 2)] = {};
 };
 
 //五子棋棋盘-状态/Hash/...
-template <bsize_t size = 15, bsize_t offset = 5> class GomokuBoard {
-  public:
+template <bsize_t size = 15, bsize_t offset = 5>
+class GomokuBoard {
+   public:
     struct do_info {
         bsize_t i;
         bsize_t j;
         bsize_t v;
     };
     class hash_func {
-      public:
+       public:
         uint64_t operator()(const GomokuBoard<size, offset> &b) const {
             return b.hashval;
         }
     };
     class equal_func {
-      public:
+       public:
         uint64_t operator()(const GomokuBoard<size, offset> &b,
                             const GomokuBoard<size, offset> &c) const {
             return b.hashval == c.hashval;
@@ -141,7 +144,7 @@ template <bsize_t size = 15, bsize_t offset = 5> class GomokuBoard {
         uint8_t na;
     };
 
-  public:
+   public:
     //重载[]
     array_tmp<GomokuBoard<size, offset>> operator[](size_t i) {
         return array_tmp<GomokuBoard<size, offset>>{*this, i};
@@ -156,7 +159,7 @@ template <bsize_t size = 15, bsize_t offset = 5> class GomokuBoard {
     }
     //撤销落子
     GomokuBoard<size, offset> &Uodo() {
-        board.set(doChain.back().i, doChain.back().j, EMP); //置空
+        board.set(doChain.back().i, doChain.back().j, EMP);  //置空
         hashval ^=
             zobrist[doChain.back().i][doChain.back().j][doChain.back().v];
         doChain.pop_back();
@@ -168,7 +171,7 @@ template <bsize_t size = 15, bsize_t offset = 5> class GomokuBoard {
     //得到点附近的棋型
     point_pattern GetPattern(bsize_t i, bsize_t j) { return {}; }
 
-  public:
+   public:
     GomokuBoard() {
         hashval = rand_uint64();
         for (size_t i = 0; i < size; ++i) {
@@ -181,10 +184,10 @@ template <bsize_t size = 15, bsize_t offset = 5> class GomokuBoard {
         }
     }
 
-  public:
+   public:
     // status
     vector_type<do_info> doChain;
-    GomokuBitBoard<size, offset> board; //四种值的位棋盘
+    GomokuBitBoard<size, offset> board;  //四种值的位棋盘
     // hashing
     uint64_t hashval;
     uint64_t zobrist[size][size][4];
@@ -192,4 +195,4 @@ template <bsize_t size = 15, bsize_t offset = 5> class GomokuBoard {
 template <typename BTy, typename VTy>
 using GomokuBoardMap = std::unordered_map<BTy, VTy, typename BTy::hash_func,
                                           typename BTy::equal_func>;
-} // namespace chis
+}  // namespace chis

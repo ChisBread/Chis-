@@ -1,10 +1,10 @@
-#include "board/gomoku.hpp"
-#include "resource/patterns.h"
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
 #include <string>
+#include "board/gomoku.hpp"
+#include "resource/patterns.h"
 using namespace std;
 const static chis::bsize_t SIZE = 15;
 const static chis::bsize_t OFFSET = 5;
@@ -29,22 +29,22 @@ void test_gomoku() {
                 continue;
             }
             switch (chis::BOARD_VAL(cells[0].val.to_ulong())) {
-            case chis::EMP:
-                cout << "E ";
-                break;
-            case chis::WHT:
-                cout << "W ";
-                break;
-            case chis::BLK:
-                cout << "B ";
-                break;
-            case chis::INV:
-                cout << "I ";
-                break;
-            default:
-                hasErrors = true;
-                cout << "? ";
-                break;
+                case chis::EMP:
+                    cout << "E ";
+                    break;
+                case chis::WHT:
+                    cout << "W ";
+                    break;
+                case chis::BLK:
+                    cout << "B ";
+                    break;
+                case chis::INV:
+                    cout << "I ";
+                    break;
+                default:
+                    hasErrors = true;
+                    cout << "? ";
+                    break;
             }
         }
         cout << endl;

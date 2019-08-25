@@ -73,4 +73,4 @@ inline constexpr bsize_t NA_MAXLEN(const bsize_t size,
     return NA(size + offset * 2 - 1, -offset, size + offset * 2, 0) + 1;
 }
 
-} // namespace chis
+}  // namespace chis
