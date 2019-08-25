@@ -1,3 +1,18 @@
+# 进度
+刚刚开始
+# Getting started
+## testing
+```
+mkdir build
+cd build
+cmake ..
+make
+./TEST
+```
+
+# 目录
+## test
+Chis-Prime 基础设施的测试
 ## resource
 patterns_by_wind23.txt 由wind32提供的棋型表
 ```
