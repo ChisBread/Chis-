@@ -2,4 +2,4 @@ a.out
 *.d
 *.o
 build/
-.vscode/*
+.vscode/
