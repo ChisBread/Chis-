@@ -1,62 +1,89 @@
 #include <iostream>
+#include <string>
 #include "board/operator.hpp"
 #include "board/gomoku.hpp"
+#include "resource/patterns.h"
+#include <cstdlib>
+#include <cstdio>
+#include <ctime>
 using namespace std;
+const static chis::bsize_t SIZE = 15;
+const static chis::bsize_t OFFSET = 5;
+
 void test_operator() {
-    for(int i = 0; i < 15; ++i) {
-        for(int j = 0; j < 15; ++j) {
-            cout << chis::HENG(i,j,15) << " ";
+    int board[SIZE*2][SIZE*2] = {};
+    for(int i = 0; i < SIZE; ++i) {
+        for(int j = 0; j < SIZE; ++j) {
+            board[i*2][j*2] = chis::HENG(i,j,SIZE);
+            board[i*2][j*2+1] = chis::SHU(i,j,SIZE);
+            board[i*2+1][j*2] = chis::PIE(i,j,SIZE);
+            board[i*2+1][j*2+1] = chis::NA(i,j,SIZE);
+        }
+    }
+    cout << string(SIZE*8, '-') << endl << "|";
+    for(int i = 0; i < SIZE*2; ++i) {
+        for(int j = 0; j < SIZE*2; ++j) {
+            printf("%03d%s", board[i][j],j%2==1?"|":",");
         }
         cout << endl;
+        if(i%2) {
+            cout << string(SIZE*8, '-') << endl;
+        } 
+        cout << "|";
     }
-    cout << chis::HENG_MAXLEN(15) << endl;
-    for(int i = 0; i < 15; ++i) {
-        for(int j = 0; j < 15; ++j) {
-            cout << chis::SHU(i,j,15) << " ";
-        }
-        cout << endl;
-    }
-    cout << chis::SHU_MAXLEN(15) << endl;
-    for(int i = 0; i < 15; ++i) {
-        for(int j = 0; j < 15; ++j) {
-            cout << chis::PIE(i,j,15) << " ";
-        }
-        cout << endl;
-    }
-    cout << chis::PIE_MAXLEN(15) << endl;
-    for(int i = 0; i < 15; ++i) {
-        for(int j = 0; j < 15; ++j) {
-            cout << chis::NA(i,j,15) << " ";
-        }
-        cout << endl;
-    }
-    cout << chis::NA_MAXLEN(15) << endl;
+    cout << chis::HENG_MAXLEN(SIZE) << "," << chis::SHU_MAXLEN(SIZE) << "|" << endl;
+    cout << "|" << chis::PIE_MAXLEN(SIZE) << "," << chis::NA_MAXLEN(SIZE) <<"|" << endl;
 }
 void test_gomoku() {
-    chis::GomokuBoard<15, 5> board;
-    for(int i = 0; i < 15; ++i) {
-        for(int j = 0; j < 15; ++j) {
-            board[i][j] = i>j?chis::BLK:chis::WHT;
+    srand(time(NULL));
+    chis::GomokuBoard<SIZE, OFFSET> board;
+    for(int i = 0; i < SIZE; ++i) {
+        for(int j = 0; j < SIZE; ++j) {
+            board[i][j] = rand()%2==0?chis::BLK:chis::WHT;
         }
     }
-    for(int i = 0; i < 15; ++i) {
-        for(int j = 0; j < 15; ++j) {
-            chis::bcell_t cell = board[i][j];
-            cout << (cell.val.to_string() == chis::BLK_CELL.val.to_string()?"B":"W") << ",";
+    bool hasErrors = false;
+    for(int i = 0; i < SIZE+OFFSET*2; ++i) {
+        for(int j = 0; j < SIZE+OFFSET*2; ++j) {
+            auto cells = board.board.get_real_all(i, j);
+            if( !(
+                cells[0].val.to_string() == cells[1].val.to_string() &&
+                cells[0].val.to_string() == cells[2].val.to_string() &&
+                cells[0].val.to_string() == cells[3].val.to_string() )) {
+                cout << "! ";
+                hasErrors = true;
+                continue;
+            }
+            switch (chis::BOARD_VAL(cells[0].val.to_ulong()))
+                {
+                case chis::EMP :
+                    cout << "E ";
+                    break;
+                case chis::WHT :
+                    cout << "W ";
+                    break;
+                case chis::BLK :
+                    cout << "B ";
+                    break;
+                case chis::INV :
+                    cout << "I ";
+                    break;
+                default:
+                    hasErrors = true;
+                    cout << "? ";
+                    break;
+                }
         }
         cout << endl;
     }
-    
-    for(int i = 0; i < 25; ++i) {
-        for(int j = 0; j < 25; ++j) {
-            chis::bcell_t cell = board.board.get_real(i, j);
-            cout << (cell.val.to_string() == chis::INV_CELL.val.to_string()?"X":"O") << ",";
-        }
-        cout << endl;
-    }
+    cout << (hasErrors?"something wrong":"everythins is OK") << endl;
+}
+void test_pattern() {
+    chis::GomokuPatterns patterns;
 }
 int main() {
-    test_operator();
-    test_gomoku();
+    //test_operator();
+    //test_gomoku();
+    test_pattern();
     return 0;
 }

@@ -29,10 +29,16 @@ public:
     size_t i;
 };
 //棋盘值类型
+enum BOARD_VAL {//一些值
+    EMP = 0, //空
+    WHT = 1, //白
+    BLK = 2, //黑
+    INV = 3, //无效点
+};
 class bcell_t {
 public:
     bcell_t(const bitset_type<2> &val):val(val){}
-    bcell_t(const bsize_t &val):val(val){}
+    bcell_t(const BOARD_VAL &val):val(bsize_t(val)){}
     template<typename _board_t>
     bcell_t(const assign_tmp<_board_t> &a):val(a.b.Get(a.i, a.j).val){}
 public:
@@ -49,13 +55,9 @@ public:
 public:
     bitset_type<2> val;
 };
-//一些值
-enum BOARD_VAL {
-    EMP = 0, WHT = 1, BLK= 2, INV = 3
-};
-const static bcell_t EMP_CELL = bitset_type<2>(uint64_t(EMP));//00
-const static bcell_t WHT_CELL = bitset_type<2>(uint64_t(WHT));//01
-const static bcell_t BLK_CELL = bitset_type<2>(uint64_t(BLK));//10
-const static bcell_t INV_CELL = bitset_type<2>(uint64_t(INV));//11
+const static bcell_t EMP_CELL(EMP);//00
+const static bcell_t WHT_CELL(WHT);//01
+const static bcell_t BLK_CELL(BLK);//10
+const static bcell_t INV_CELL(INV);//11
 
 } // namespace chis

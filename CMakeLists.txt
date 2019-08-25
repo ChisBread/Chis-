@@ -1,0 +1,24 @@
+cmake_minimum_required (VERSION 2.8)
+#指定项目的名称，一般和项目的文件夹名称对应
+PROJECT(Chis++)
+
+#头文件目录
+INCLUDE_DIRECTORIES(
+./
+)
+
+#源文件目录
+AUX_SOURCE_DIRECTORY(. DIR_SRCS)
+AUX_SOURCE_DIRECTORY(board DIR_SRCS)
+AUX_SOURCE_DIRECTORY(resource DIR_SRCS)
+AUX_SOURCE_DIRECTORY(search DIR_SRCS)
+AUX_SOURCE_DIRECTORY(utils DIR_SRCS)
+
+#添加要编译的可执行文件
+ADD_EXECUTABLE(${PROJECT_NAME} ${DIR_SRCS})
+
+#添加可执行文件所需要的库 e.g libm.so
+#TARGET_LINK_LIBRARIES(${PROJECT_NAME} m)
+
+#显示编译过程
+#SET( CMAKE_VERBOSE_MAKEFILE on )
