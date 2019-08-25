@@ -1,5 +1,5 @@
 #pragma once
-#include "board/operator.hpp"
+#include "board/mappings.hpp"
 #include "board/types.h"
 namespace chis {
 //五子棋位棋盘-基本操作

@@ -1,4 +1,4 @@
 a.out
 *.d
 *.o
-build
+build/
