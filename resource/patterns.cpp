@@ -1,7 +1,7 @@
 #include "resource/patterns.h"
 
 namespace chis {
-uint32_t patterns[2724] = {
+const uint32_t patterns[2724] = {
     0x3a8a23a,  0x328aba,   0xc0b0,     0xe8a2bb,   0x322aabd,  0x3aa02ba,
     0x30a8ba,   0x3802032,  0x3a0a037,  0xeaa80bd,  0x32a222ba, 0x3002aba,
     0x3a8282b7, 0xc82837,   0xca2a2bb,  0x382a0b9,  0x30a282ba, 0x3882234,

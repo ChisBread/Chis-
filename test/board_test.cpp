@@ -1,6 +1,7 @@
 #include <string>
 #include "board/gomoku.hpp"
 #include "gtest/gtest.h"
+#include "resource/patterns.h"
 using namespace std;
 const static chis::bsize_t SIZE = 15;
 const static chis::bsize_t OFFSET = 5;
@@ -71,4 +72,26 @@ TEST(TESTBoard, Board) {
             EXPECT_EQ(cells[0].val.to_ulong(), cells[3].val.to_ulong());
         }
     }
+}
+TEST(TESTBoard, Patterns) {
+    chis::GomokuPatterns pats;
+    chis::vector_type<uint8_t> pattern_map(1 << 24, 0);
+    for (size_t i = 0; i < 2724; ++i) {
+        uint32_t pat = chis::patterns[i];
+        //取值 后4位
+        uint8_t val = pat & 0xF;
+        //去掉2位边界和4位值
+        pat = pat >> 6;
+        //填充
+        auto more_patterns = chis::GomokuPatterns::create_more(pat);
+        for (uint32_t p : more_patterns) {
+            //覆盖值一致性
+            if (pattern_map[p] != 0) {
+                EXPECT_EQ(pattern_map[p], val);
+            }
+            pattern_map[p] = val;
+        }
+    }
+    //可用性校验
+    //构造30~60个常见棋型以及其变种校验棋型表可用性
 }
