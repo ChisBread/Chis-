@@ -46,7 +46,7 @@ TEST(TESTBoard, Board) {
     //初始化
     srand(time(NULL));
     chis::BOARD_VAL realboard[SIZE][SIZE] = {};
-    chis::GomokuBoard<SIZE, OFFSET> board;
+    chis::GomokuBoard<SIZE, OFFSET, chis::GomokuBitBoard<SIZE, OFFSET>> board;
     for (int i = 0; i < SIZE; ++i) {
         for (int j = 0; j < SIZE; ++j) {
             chis::BOARD_VAL setVal = rand() % 2 == 0 ? chis::BLK : chis::WHT;
@@ -115,6 +115,7 @@ TEST(TESTBoard, Patterns) {
         }
     }
     auto rev_pattern_test = [&](uint32_t i) {
+        ASSERT_LT(i, (1U << 22));
         uint8_t valblk = pattern_map[i]&0x0F;
         uint8_t valwht = (pattern_map[i]>>4);
         {//置反一致性校验 黑子白子互换结果是否一致 a.黑白颠倒 b.棋型一致
