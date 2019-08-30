@@ -95,18 +95,47 @@ TEST(TESTBoard, BoardPattern) {
         EXPECT_EQ(h, t);
     };
     // GetPattern 测试
+    //活一
     board[7][7] = chis::BOARD_VAL::BLK;
     check_pattern(0b0000000000100000000000);
     check_pattern_type(2);
+    {  //眠一
+        board[7][8] = chis::BOARD_VAL::WHT;
+        check_pattern(0b0000000000100100000000);
+        check_pattern_type(1);
+        board.Uodo();
+    }
+    //活二
     board[7][8] = chis::BOARD_VAL::BLK;
     check_pattern(0b0000000000101000000000);
     check_pattern_type(6);
+    {  //眠二
+        board[7][6] = chis::BOARD_VAL::WHT;
+        check_pattern(0b0000000001101000000000);
+        check_pattern_type(3);
+        board.Uodo();
+    }
+    //活三
     board[7][6] = chis::BOARD_VAL::BLK;
     check_pattern(0b0000000010101000000000);
     check_pattern_type(9);
+    {  //眠三
+        board[7][5] = chis::BOARD_VAL::WHT;
+        check_pattern(0b0000000110101000000000);
+        check_pattern_type(7);
+        board.Uodo();
+    }
+    //活四
     board[7][5] = chis::BOARD_VAL::BLK;
     check_pattern(0b0000001010101000000000);
     check_pattern_type(12);
+    {  //眠四
+        board[7][9] = chis::BOARD_VAL::WHT;
+        check_pattern(0b0000001010101001000000);
+        check_pattern_type(10);
+        board.Uodo();
+    }
+    //成5
     board[7][9] = chis::BOARD_VAL::BLK;
     check_pattern(0b0000001010101010000000);
     check_pattern_type(13);
