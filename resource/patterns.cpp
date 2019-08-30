@@ -1,6 +1,9 @@
 #include "resource/patterns.h"
 
 namespace chis {
+
+thread_local uint8_t GomokuPatterns::pattern_map[1U << 22] = {};
+thread_local bool GomokuPatterns::inited = false;
 const uint32_t patterns[2724] = {
     0x3a8a23a,  0x328aba,   0xc0b0,     0xe8a2bb,   0x322aabd,  0x3aa02ba,
     0x30a8ba,   0x3802032,  0x3a0a037,  0xeaa80bd,  0x32a222ba, 0x3002aba,

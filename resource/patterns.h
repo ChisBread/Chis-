@@ -2,7 +2,7 @@
 #include "utils/types.h"
 namespace chis {
 //原始棋型 1~4位为值位，5~30位为棋型位。wind23棋型表转换规则
-//re.match(r'XX_*(X[O_]*X)_*XX', col[-1]).group(1) then X->11 O->10 _->00
+// re.match(r'XX_*(X[O_]*X)_*XX', col[-1]).group(1) then X->11 O->10 _->00
 extern const uint32_t patterns[2724];
 
 //目标棋型 1~22位为棋型位 11为边界 00为空 10为黑子 01为白子
@@ -10,7 +10,11 @@ extern const uint32_t patterns[2724];
 class GomokuPatterns {
    public:
     GomokuPatterns() {
+        if (inited) {
+            return;
+        }
         build();
+        inited = true;
     }
     static set_type<uint32_t> &arrangement_padding(uint32_t size) {
         static thread_local set_type<uint32_t> genres[12] = {
@@ -20,7 +24,7 @@ class GomokuPatterns {
         }
         set_type<uint32_t> ret;
         for (uint32_t a : arrangement_padding(size - 1)) {
-            //存在11            
+            //存在11
             ret.insert((a << 2) | 0x3U);
             ret.insert((a << 2) | 0x2U);
             ret.insert((a << 2) | 0x1U);
@@ -42,14 +46,14 @@ class GomokuPatterns {
         }
         return reverse;
     }
-    //22bit中心对称翻转
+    // 22bit中心对称翻转
     static uint32_t reverse_22bit(uint32_t v) {
-        v = ((v >> 1)  & 0x55555555U) | ((v << 1)  & 0xAAAAAAAAU);
-        v = ((v >> 2)  & 0x33333333U) | ((v << 2)  & 0xCCCCCCCCU);
-        v = ((v >> 4)  & 0x0F0F0F0FU) | ((v << 4)  & 0xF0F0F0F0U);
-        v = ((v >> 8)  & 0x00FF00FFU) | ((v << 8)  & 0xFF00FF00U);
+        v = ((v >> 1) & 0x55555555U) | ((v << 1) & 0xAAAAAAAAU);
+        v = ((v >> 2) & 0x33333333U) | ((v << 2) & 0xCCCCCCCCU);
+        v = ((v >> 4) & 0x0F0F0F0FU) | ((v << 4) & 0xF0F0F0F0U);
+        v = ((v >> 8) & 0x00FF00FFU) | ((v << 8) & 0xFF00FF00U);
         v = ((v >> 16) & 0x0000FFFFU) | ((v << 16) & 0xFFFF0000U);
-        return (v>>10);
+        return (v >> 10);
     }
     static vector_type<uint32_t> create_more(uint32_t pat) {
         //计算需要填充的位数
@@ -88,10 +92,11 @@ class GomokuPatterns {
                     } else if (rightlen != 0) {
                         continue;
                     }
-                    
+
                     ret.push_back(ret_pat);
                     //翻转黑白，使得黑白棋型一致
-                    ret.push_back(reverse_pattern(ret_pat)^0x00400000U);//同时给第23位置1
+                    ret.push_back(reverse_pattern(ret_pat) ^
+                                  0x00400000U);  //同时给第23位置1
                 }
             }
         }
@@ -104,20 +109,25 @@ class GomokuPatterns {
             uint8_t val = pat & 0xF;
             //去掉2位边界和4位值
             pat = pat >> 6;
-            auto more_patterns = create_more(pat);//填充
+            auto more_patterns = create_more(pat);  //填充
             for (uint32_t p : more_patterns) {
-                if((p >> 22) == 0) {
-                    pattern_map[p] &= 0xF0U;//去掉低四位
-                    pattern_map[p] |= val;//低四位赋值
+                if ((p >> 22) == 0) {
+                    pattern_map[p] &= 0xF0U;  //去掉低四位
+                    pattern_map[p] |= val;    //低四位赋值
                 } else {
                     p &= 0x003FFFFFU;
-                    pattern_map[p] &= 0x0FU;//去掉高四位
-                    pattern_map[p] |= (val<<4);//高四位赋值
+                    pattern_map[p] &= 0x0FU;       //去掉高四位
+                    pattern_map[p] |= (val << 4);  //高四位赋值
                 }
             }
         }
     }
+
    public:
-    uint8_t pattern_map[1U << 22] = {};
+    uint8_t operator[](size_t i) const { return pattern_map[i]; }
+
+   public:
+    static thread_local uint8_t pattern_map[1U << 22];
+    static thread_local bool inited;
 };
 }  // namespace chis

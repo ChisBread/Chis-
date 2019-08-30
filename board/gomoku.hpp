@@ -1,15 +1,12 @@
 #pragma once
-#include "board/mappings.hpp"
+#include "board/gomoku_arrayboard.hpp"
 #include "board/types.h"
-#include "gomoku_bitboard.hpp"
+#include "resource/patterns.h"
 namespace chis {
 
-//只考虑黑棋棋形，白棋转成黑棋再判断
-using pinfo_t = uint8_t;
-static const pinfo_t WON = 0x80;
-
 //五子棋棋盘-状态/Hash/...
-template <bsize_t size = 15, bsize_t offset = 5, typename BoardTy = GomokuBitBoard<size, offset>>
+template <bsize_t size = 15, bsize_t offset = 5,
+          typename BoardTy = GomokuArrayBoard<size, offset>>
 class GomokuBoard {
    public:
     using GomokuBoardType = GomokuBoard<size, offset>;
@@ -20,70 +17,66 @@ class GomokuBoard {
     };
     class hash_func {
        public:
-        uint64_t operator()(const GomokuBoardType &b) const {
-            return b.hashval;
-        }
+        uint64_t operator()(const GomokuBoardType &b) const { return b.hash(); }
     };
     class equal_func {
        public:
         uint64_t operator()(const GomokuBoardType &b,
                             const GomokuBoardType &c) const {
-            return b.hashval == c.hashval;
+            return b.hash() == c.hash();
         }
     };
-    struct point_pattern {
-        uint8_t heng;
-        uint8_t shu;
-        uint8_t pie;
-        uint8_t na;
-    };
+
    public:
     //重载[]
     array_tmp<GomokuBoardType> operator[](size_t i) {
         return array_tmp<GomokuBoardType>{*this, i};
     }
     //落子
-    GomokuBoardType &Do(bsize_t i, bsize_t j, const bcell_t &v) {
-        board.set(i, j, v);
-        bsize_t val = v.val.to_ulong();
-        hashval ^= zobrist[i][j][val];
-        doChain.push_back(do_info{i, j, val});
+    GomokuBoardType &Do(bsize_t i, bsize_t j, const BOARD_VAL v) {
+        board.Set(i, j, v);
+        zobrist.Set(i, j, v);
+        doChain.push_back(do_info{i, j, v});
         return *this;
     }
     //撤销落子
     GomokuBoardType &Uodo() {
-        board.set(doChain.back().i, doChain.back().j, EMP);  //置空
-        hashval ^=
-            zobrist[doChain.back().i][doChain.back().j][doChain.back().v];
+        board.Set(doChain.back().i, doChain.back().j, EMP);  //置空
+        zobrist.Set(doChain.back().i, doChain.back().j, doChain.back().v);
         doChain.pop_back();
         return *this;
     }
-    bcell_t Get(bsize_t i, bsize_t j) const { return board.get(i, j); }
-    //评估函数
-    int32_t Evaluation() { return 0; }
-    //得到点附近的棋型
-    point_pattern GetPattern(bsize_t i, bsize_t j) { return {}; }
 
    public:
-    GomokuBoard() {
-        hashval = rand_uint64();
-        for (size_t i = 0; i < size; ++i) {
-            for (size_t j = 0; j < size; ++j) {
-                zobrist[i][j][0] = rand_uint64();
-                zobrist[i][j][1] = rand_uint64();
-                zobrist[i][j][2] = rand_uint64();
-                zobrist[i][j][3] = rand_uint64();
-            }
-        }
+    // Hash
+    uint64_t Hash() const { return zobrist.Hash(); }
+    //评估函数
+    int32_t Evaluation() const { return 0; }
+    //取值
+    BOARD_VAL Get(bsize_t i, bsize_t j) const { return board.Get(i, j); }
+    //得到点附近的棋型
+    std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(
+        bsize_t i, bsize_t j) const {
+        auto [h, s, p, n] = board.GetPattern(i, j);
+        return {pattern_type[h], pattern_type[s], pattern_type[p],
+                pattern_type[n]};
     }
+    std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> GetPattern(
+        bsize_t i, bsize_t j) const {
+        return board.GetPattern(i, j);
+    }
+
+   public:
+    GomokuBoard() {}
 
    public:
     // status
     vector_type<do_info> doChain;
     BoardTy board;  //棋盘
     // hashing
-    uint64_t hashval;
-    uint64_t zobrist[size][size][4];
+    ZobristHash<size, 4> zobrist;
+    // pattern
+    GomokuPatterns pattern_type;
 };
 template <typename BTy, typename VTy>
 using GomokuBoardMap = std::unordered_map<BTy, VTy, typename BTy::hash_func,
