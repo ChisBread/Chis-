@@ -1,24 +1,41 @@
 # 进度
-刚刚开始
+基础功能开发，单元测试中
 # Getting started
-## testing
+## 获取Chis-Prime
 ```
-mkdir build
-cd build
-cmake ..
-make
+git clone https://github.com/ChisBread/Chis-Prime.git
+```
+## 获取依赖
+```
+git submodule update --init --recursive
+```
+## 测试
+```
+mkdir build && cd build
+CC=/usr/local/bin/clang CXX=/usr/local/bin/clang++ cmake .. && make -j8
 ./TEST
 ```
-
 # 目录
 ## test
 Chis-Prime 基础设施的测试
+## thirdparty
+依赖的第三方库
+## utils
+通用类型与方法
+## board
+棋盘操作、棋盘类型等
+## search
+搜索算法
 ## resource
 patterns_by_wind23.txt 由wind32提供的棋型表
+build_patterns.py 生成包含原始棋型的C++代码
+
 ```
 XX_*X代表左边界,X_*XX代表右边界
 XX_*X[O_]*X_*XX
 ```
+# 附录
+## 关于patterns_by_wind23
 |棋形(个人叫法)|编号|样例|描述|
 |----|----|----|----|
 |死棋 |0 |XX______XOX______XX|毫无用处的棋型|
