@@ -3,7 +3,7 @@
 #include "utils/zobrist_hash.hpp"
 namespace chis {
 //长度类型
-using bsize_t = uint64_t;
+using bsize_t = int32_t;
 
 //棋盘值类型
 enum BOARD_VAL : uint8_t {  //一些值
