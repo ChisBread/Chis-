@@ -15,27 +15,21 @@ mkdir build && cd build
 CC=/usr/local/bin/clang CXX=/usr/local/bin/clang++ cmake .. && make -j8
 ./TEST
 ```
-# 目录
-## test
-Chis-Prime 基础设施的测试
-## thirdparty
-依赖的第三方库
-## utils
-通用类型与方法
-## board
-棋盘操作、棋盘类型等
-## search
-搜索算法
-## resource
-patterns_by_wind23.txt 由wind32提供的棋型表
-build_patterns.py 生成包含原始棋型的C++代码
 
+# 附录
+## 代码目录
+- test Chis-Prime 基础设施的测试
+- thirdparty 依赖的第三方库
+- utils 通用类型与方法
+- board 棋盘操作、棋盘类型等
+- search 搜索算法
+- resource 生成包含原始棋型的C++代码
+## 关于patterns_by_wind23
+[Tianyi Hao](https://github.com/wind23) 提供的棋型表，共有14种棋型
 ```
 XX_*X代表左边界,X_*XX代表右边界
 XX_*X[O_]*X_*XX
 ```
-# 附录
-## 关于patterns_by_wind23
 |棋形(个人叫法)|编号|样例|描述|
 |----|----|----|----|
 |死棋 |0 |XX______XOX______XX|毫无用处的棋型|
