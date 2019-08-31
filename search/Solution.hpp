@@ -30,20 +30,26 @@ struct statInfo {
     size_t pvs_pass_cnt = 0;
     size_t node_cnt = 0;
 };
-
-template <typename Board>
-// using Board = GomokuBoard<15, 5>;
-// const size_t MAX_DEPTH = 6;
-// const size_t MEM_BYTE = 128000000;
-// const size_t TT_SIZE = MEM_BYTE / sizeof(ttInfo);
+using MovWithVal = vector_type<std::pair<std::tuple<int, int>, int>>;
 class Solution {
    public:
-    Solution(size_t MEM_BYTE = 128000000)
-        : TT_SIZE(MEM_BYTE / sizeof(ttInfo)), TT(MEM_BYTE / sizeof(ttInfo)) {}
-    using MovWithVal = vector_type<std::pair<std::tuple<int, int>, int>>;
-
+    virtual MovWithVal Search(const size_t MAX_DEPTH = 5, const MovWithVal &recommend = {}) = 0;
+    virtual void Do(int i, int j) = 0;
+    virtual void Undo() = 0;
+    virtual void StopSearch() = 0;
+    virtual void StartSearch() = 0;
+    virtual bool IsStop() = 0;
+    statInfo stat;
+};
+template <typename Board>
+class solution : public Solution {
+   public:
+    solution(size_t MEM_BYTE = 128000000)
+        : TT_SIZE(MEM_BYTE / sizeof(ttInfo)),
+          TT(MEM_BYTE / sizeof(ttInfo)) {}
+  
    public:  //以下方法都是线程不安全的，一个线程建议就搞一个实例
-    MovWithVal Search(Board &board, const size_t MAX_DEPTH = 5,
+    virtual MovWithVal Search(const size_t MAX_DEPTH = 5,
                       const MovWithVal &recommend = {}) {
         StartSearch();
         MovWithVal moves;
@@ -56,7 +62,7 @@ class Solution {
                 board.Do(i, j);  //落子
                 int val;
                 //如果已经找到PV, 则后续节点使用PVS
-                val = -AlphaBeta(board, -WON, WON, depth);
+                val = -AlphaBeta(-WON, WON, depth);
                 board.Undo();
                 mov.second = val;
                 // cout << val << endl;
@@ -83,10 +89,25 @@ class Solution {
         }
         return moves;
     }
+   public:  //下面这些是线程安全的, 用来做超时控制，可以做到瞬间返回(截断)
+    virtual void Do(int i, int j) { board.Do(i, j); } 
+    virtual void Undo() { board.Undo(); }
+    virtual void StopSearch() {
+        std::lock_guard<std::mutex> lg(ABPtrMtx);
+        AlphaBetaPtr = &solution<Board>::AlphaBetaEnd;
+    }
+    virtual void StartSearch() {
+        std::lock_guard<std::mutex> lg(ABPtrMtx);
+        AlphaBetaPtr = &solution<Board>::AlphaBeta;
+    }
+    virtual bool IsStop() {
+        return AlphaBetaPtr == &solution<Board>::AlphaBetaEnd;
+    }
+   public:
     //带Alpha-Beta剪枝的Min-Max, 使用NegaMax简化形式
     //增加了置换表优化
     //增加了主要变例搜索优化
-    int AlphaBeta(Board &board, int alpha, int beta, int depth) {
+    int AlphaBeta(int alpha, int beta, int depth) {
         bool isZeroWin = ABS(beta - alpha) == 1;
         if (!isZeroWin) {
             ++stat.node_cnt;
@@ -162,17 +183,15 @@ class Solution {
                 //如果已经找到PV, 则后续节点使用PVS
                 if (foundPV) {
                     ++stat.pvs_try_cnt;
-                    val = -(this->*AlphaBetaPtr)(board, -alpha - 1, -alpha,
-                                                 next_depth);
+                    val =
+                        -(this->*AlphaBetaPtr)(-alpha - 1, -alpha, next_depth);
                     if (val > alpha && val < beta) {
-                        val = -(this->*AlphaBetaPtr)(board, -beta, -alpha,
-                                                     next_depth);
+                        val = -(this->*AlphaBetaPtr)(-beta, -alpha, next_depth);
                     } else {
                         ++stat.pvs_pass_cnt;
                     }
                 } else {
-                    val = -(this->*AlphaBetaPtr)(board, -beta, -alpha,
-                                                 next_depth);
+                    val = -(this->*AlphaBetaPtr)(-beta, -alpha, next_depth);
                 }
                 if (val >= beta) {
                     return {beta, true};
@@ -217,27 +236,26 @@ class Solution {
                   alpha, bestMove);
         return alpha;
     }
-
-   public:  //下面这些是线程安全的, 用来做超时控制，可以做到瞬间返回(截断)
-    void StopSearch() {
-        std::lock_guard<std::mutex> lg(ABPtrMtx);
-        AlphaBetaPtr = &Solution<Board>::AlphaBetaEnd;
+    int AlphaBetaEnd(int alpha, int beta, int depth) {
+        return AlphaBeta(alpha, beta, 0);  //跳到叶节点
     }
-    void StartSearch() {
-        std::lock_guard<std::mutex> lg(ABPtrMtx);
-        AlphaBetaPtr = &Solution<Board>::AlphaBeta;
-    }
-    bool IsStop() { return AlphaBetaPtr == &Solution<Board>::AlphaBetaEnd; }
-    int AlphaBetaEnd(Board &board, int alpha, int beta, int depth) {
-        return AlphaBeta(board, alpha, beta, 0);  //跳到叶节点
-    }
-
    public:
+    Board board;
     const size_t TT_SIZE;
     vector_type<ttInfo> TT;
-    statInfo stat;
     std::mutex ABPtrMtx;
-    int (Solution<Board>::*AlphaBetaPtr)(Board &, int, int,
-                                         int) = &Solution<Board>::AlphaBeta;
+    int (solution<Board>::*AlphaBetaPtr)(int, int,int) = &solution<Board>::AlphaBeta;
 };
+Solution *MakeSolution(size_t size, size_t MEM_BYTE = 128000000) {
+    switch (size) {
+        case 10:
+            return new solution<GomokuBoard<10>>(MEM_BYTE);
+        case 15:
+            return new solution<GomokuBoard<15>>(MEM_BYTE);
+        case 20:
+            return new solution<GomokuBoard<20>>(MEM_BYTE);
+        default:
+            throw(std::exception("board size must in values(10,15,20)"));
+    }
+}
 }  // namespace chis
