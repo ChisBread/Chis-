@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "utils/types.h"
 #include "utils/zobrist_hash.hpp"
 namespace chis {

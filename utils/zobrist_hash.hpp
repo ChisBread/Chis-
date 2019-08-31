@@ -19,7 +19,7 @@ class ZobristHash {
    private:
     // hashing
     uint64_t hashval = 0;
-    uint64_t zobrist[size][size][val_cnt];
+    uint64_t zobrist[size][size][val_cnt] = {};
 };
 
 }  // namespace chis

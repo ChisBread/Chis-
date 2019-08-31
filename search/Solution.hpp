@@ -48,7 +48,7 @@ class Solution {
         for (auto mov : board.Moves()) {
             moves.push_back({mov, -WON});
         }
-        for (size_t depth = 0; depth <= MAX_DEPTH; ++depth) {
+        for (int depth = 0; depth <= MAX_DEPTH; ++depth) {
             for (auto &mov : moves) {
                 auto [i, j] = mov.first;
                 board.Do(i, j);  //落子

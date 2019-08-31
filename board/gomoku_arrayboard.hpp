@@ -37,8 +37,8 @@ class GomokuArrayBoard {
 
    public:
     GomokuArrayBoard() {
-        for (size_t i = 0; i < size + offset * 2; ++i) {
-            for (size_t j = 0; j < offset; ++j) {
+        for (int i = 0; i < size + offset * 2; ++i) {
+            for (int j = 0; j < offset; ++j) {
                 SetReal(i, j, INV);
                 SetReal(i, size + offset * 2 - 1 - j, INV);
                 SetReal(j, i, INV);

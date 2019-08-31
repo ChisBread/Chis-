@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "utils/types.h"
 namespace chis {
 //原始棋型 1~4位为值位，5~30位为棋型位。wind23棋型表转换规则
@@ -87,7 +87,7 @@ class GomokuPatterns {
     static vector_type<uint32_t> create_more(uint32_t pat) {
         //计算需要填充的位数
         uint32_t paddinglen = 0;
-        for (size_t i = 2; i <= 22; i += 2) {
+        for (uint32_t i = 2; i <= 22; i += 2) {
             //找最后一个0x3边界
             if (((uint32_t(3) << i) & pat) == (uint32_t(3) << i)) {
                 paddinglen = 11 - i / 2;
@@ -96,7 +96,7 @@ class GomokuPatterns {
         pat &= (uint32_t(1) << (22 - paddinglen * 2)) - 1;  //去掉左边界标志
         vector_type<uint32_t> ret;
         //左右填充
-        for (size_t i = 0; i <= paddinglen; ++i) {
+        for (uint32_t i = 0; i <= paddinglen; ++i) {
             uint32_t leftlen = i, rightlen = paddinglen - i;
             //边界不能覆盖棋型中点，否则会发生混淆
             if (leftlen > 5 || rightlen > 5) {

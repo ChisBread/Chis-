@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "board/gomoku_arrayboard.hpp"
 #include "board/types.h"
 #include "resource/patterns.h"
@@ -12,8 +12,8 @@ class GomokuBoard {
    public:
     using GomokuBoardType = GomokuBoard<size, offset>;
     struct pattern_info {
-        size_t pattern_cnt_blk[14] = {};
-        size_t pattern_cnt_wht[14] = {};
+        int pattern_cnt_blk[16] = {};
+        int pattern_cnt_wht[16] = {};
     };
     struct do_info {
         int i;
@@ -126,7 +126,7 @@ class GomokuBoard {
         static const int evaluation[14] = {0,  1,   10,  12,  30,   35,   40,
                                            45, 100, 120, 230, 1000, 1000, WON};
         int val = 0;        
-        for (size_t i = 1; i < 14; ++i) {
+        for (int i = 1; i < 14; ++i) {
             val +=
                 (pinfo.pattern_cnt_blk[i] * evaluation[i]);  //棋型间2倍差
             val -= (pinfo.pattern_cnt_wht[i] * evaluation[i]);
@@ -140,7 +140,7 @@ class GomokuBoard {
         }
         int32_t val = 0;
         //check 先手胜利 A为下一步先手
-        auto check = [](const size_t (&A)[14], const size_t (&B)[14]) {
+        auto check = [](const int (&A)[16], const int (&B)[16]) {
             if (A[PAT_TYPE::FIVE]) {//A已经赢了
                 return WON;
             } else if(B[PAT_TYPE::FIVE]) {//B已经赢了

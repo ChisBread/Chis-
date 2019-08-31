@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "board/types.h"
 namespace chis {
 inline std::tuple<int, int> HENG_NEXT(const int i, const int j, const int n) {
