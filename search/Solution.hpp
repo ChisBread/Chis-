@@ -18,13 +18,17 @@ struct ttInfo {
 //统计信息
 struct statInfo {
     size_t leaf_cnt = 0;
+    size_t ending_cnt = 0;
     size_t tt_record_cnt = 0;
+    size_t tt_hit_cnt = 0;
     size_t tt_pv_pass_cnt = 0;
     size_t tt_alpha_pass_cnt = 0;
     size_t tt_beta_pass_cnt = 0;
+    size_t bestmove_try_cnt = 0;
     size_t bestmove_pass_cnt = 0;
+    size_t pvs_try_cnt = 0;
     size_t pvs_pass_cnt = 0;
-    size_t pvs_pass_root_cnt = 0;
+    size_t node_cnt = 0;
 };
 
 template <typename Board>
@@ -36,65 +40,54 @@ class Solution {
    public:
     Solution(size_t MEM_BYTE = 128000000)
         : TT_SIZE(MEM_BYTE / sizeof(ttInfo)), TT(MEM_BYTE / sizeof(ttInfo)) {}
-
+        using MovWithVal = vector_type<std::pair<std::tuple<int, int>, int>>;
    public:  //以下方法都是线程不安全的，一个线程建议就搞一个实例
-    std::pair<std::tuple<int, int>, int> Search(Board &board,
-                                                const size_t MAX_DEPTH = 5) {
+    MovWithVal Search(Board &board, const size_t MAX_DEPTH = 5,const MovWithVal &recommend = {}) {
         StartSearch();
-        std::vector<std::pair<std::tuple<int, int>, int>> moves;
+        MovWithVal moves;
         for (auto mov : board.Moves()) {
             moves.push_back({mov, -WON});
         }
-        std::pair<std::tuple<int, int>, int> bestMove = {{-1, -1}, 0};
         for (size_t depth = 0; depth <= MAX_DEPTH; ++depth) {
-            int alpha = -WON, beta = WON;  //重置窗口
-            bool foundPV = false;
             for (auto &mov : moves) {
                 auto [i, j] = mov.first;
                 board.Do(i, j);  //落子
-                // int val = -AlphaBeta(board, -beta, -alpha, depth);
                 int val;
                 //如果已经找到PV, 则后续节点使用PVS
-                if (foundPV) {
-                    val = -AlphaBeta(board, -alpha - 1, -alpha, depth);
-                    if (val > alpha && val < beta) {
-                        val = -AlphaBeta(board, -beta, -alpha, depth);
-                    } else {
-                        ++stat.pvs_pass_root_cnt;
-                    }
-                } else {
-                    val = -AlphaBeta(board, -beta, -alpha, depth);
-                }
+                val = -AlphaBeta(board, -WON, WON, depth);
                 board.Undo();
                 mov.second = val;
-                if (val > alpha) {
-                    alpha = val;
-                    foundPV = true;
-                    //返回胜利节点
-                    if (val == WON) {
-                        break;
-                    }
+                //cout << val << endl;
+                if (val == WON) {
+                    break;
                 }
             }
             std::stable_sort(moves.begin(), moves.end(), [](auto a, auto b) {
                 return a.second > b.second;
             });
-            bestMove = moves.front();
-            {
-                auto [i, j] = moves.front().first;
-                cout << "最佳着法:" << i << " " << j << " "
-                     << moves.front().second << " " << depth << endl;
+            while(moves.size() > 1 && moves.back().second == -WON) {
+                moves.pop_back();
             }
-            if (bestMove.second == WON || bestMove.second == -WON) {
+            auto &bestMove = moves.front();
+            {
+                auto [i, j] = bestMove.first;
+                cout << "最佳着法:" << i << " " << j << " "
+                     << bestMove.second << " " << depth << endl;
+            }
+            if (bestMove.second == WON || bestMove.second == -WON || moves.size() == 1) {
                 break;
             }
         }
-        return bestMove;
+        return moves;
     }
     //带Alpha-Beta剪枝的Min-Max, 使用NegaMax简化形式
     //增加了置换表优化
     //增加了主要变例搜索优化
     int AlphaBeta(Board &board, int alpha, int beta, int depth) {
+        bool isZeroWin = ABS(beta-alpha) == 1;
+        if(!isZeroWin) {
+            ++stat.node_cnt;
+        }
         // cout << alpha << "\t" << beta << endl;
         //命中缓存
         int maxVal = INT32_MIN;
@@ -102,6 +95,7 @@ class Solution {
         if (ttInfo tt = TT[board.Hash() % TT_SIZE];
             tt.key == board.Hash() &&
             (depth <= tt.depth || (tt.value == WON || tt.value == -WON))) {
+            ++stat.tt_hit_cnt;
             if (tt.rel == RELATION_VAL::PV) {
                 //如果是真实值，则直接选用
                 ++stat.tt_pv_pass_cnt;
@@ -124,28 +118,30 @@ class Solution {
         auto record_tt = [&](uint64_t key, int dp, RELATION_VAL rel, int value,
                              std::tuple<int, int> mov) {
             //非零窗口且深度足够 or 胜利局面
-            if (((beta - alpha != 1) && TT[key % TT_SIZE].depth <= dp) ||
+            if (( !isZeroWin && TT[key % TT_SIZE].depth <= dp) ||
                 (value == WON || value == -WON)) {
                 ++stat.tt_record_cnt;
                 TT[key % TT_SIZE] = {key, dp, rel, value, mov};
             }
         };
-        {  //正常结束
+        {  
             //叶子节点
-            if (depth == 0) {
-                if (beta - alpha != 1) {
+            if (auto [val, end] = board.Ending(); end) {
+                if (!isZeroWin) {
                     ++stat.leaf_cnt;
-                }
-                auto val = board.Evaluation();
-                record_tt(board.Hash(), depth, RELATION_VAL::PV, val, bestMove);
-                return val;
-            }
-            if (auto [val, ok] = board.Ending(); ok) {
-                if (beta - alpha != 1) {
-                    ++stat.leaf_cnt;
+                    if(end) {
+                        ++stat.ending_cnt;
+                    }
                 }
                 //局面终结
                 record_tt(board.Hash(), depth, RELATION_VAL::PV, val, bestMove);
+                return val;
+            }
+            if(depth == 0) {
+                if (!isZeroWin) {
+                    ++stat.leaf_cnt;
+                }
+                int val = board.Evaluation();
                 return val;
             }
         }
@@ -162,6 +158,7 @@ class Solution {
                 int val;
                 //如果已经找到PV, 则后续节点使用PVS
                 if (foundPV) {
+                    ++stat.pvs_try_cnt;
                     val = -(this->*AlphaBetaPtr)(board, -alpha - 1, -alpha,
                                                  next_depth);
                     if (val > alpha && val < beta) {
@@ -196,6 +193,7 @@ class Solution {
         };
         //置换表中有最佳着法,直接尝试
         if (auto [i, j] = bestMove; i != -1 && j != -1) {
+            ++stat.bestmove_try_cnt;
             bool out = search_move(bestMove, depth - 1);
             if (out) {
                 ++stat.bestmove_pass_cnt;

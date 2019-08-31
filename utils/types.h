@@ -11,6 +11,7 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
+#define ABS(x) ((x)>=0?(x):-(x))
 namespace chis {
 using std::cout;
 using std::endl;
