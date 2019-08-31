@@ -150,12 +150,13 @@ class GomokuBoard {
             } else if(B[PAT_TYPE::FIVE]) {//B已经赢了
                 return -WON;
             //A先手，有4直接赢
-            } else if(A[PAT_TYPE::L4A] || A[PAT_TYPE::L4B] || A[PAT_TYPE::S4]) {
-                return WON;
+            } 
+			//else if(A[PAT_TYPE::L4A] || A[PAT_TYPE::L4B] || A[PAT_TYPE::S4]) {
+            //    return WON;
             //A没有4 B有活4或双眠4(最糟糕的情况是 双眠4只有一个成5点)
-            } else if(B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] || (B[PAT_TYPE::S4] > 1)) {
-                return -WON;
-            }
+            //} else if(B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] || (B[PAT_TYPE::S4] > 1)) {
+            //    return -WON;
+            //}
             return 0;
         };
         if(Turn() == BOARD_VAL::BLK) {//黑先手

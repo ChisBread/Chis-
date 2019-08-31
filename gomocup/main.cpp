@@ -46,11 +46,18 @@ int Start(chis::Solution* &slu) {
 }
 int Turn(chis::Solution* &slu) {
     string line;
-    getline(cin, line);
     int x, y;
-    if(sscanf(line.c_str(), "%*s%d,%d", &x, &y) != 2) {
-        cout << "ERROR ShouldBe:`Turn %d,%d`" << endl;
-    }
+    while (getline(cin, line)) {
+        if (line.empty()) {
+            continue;
+		}
+        if (sscanf(line.c_str(), "%d,%d", &x, &y) != 2) {
+            cout << "ERROR ShouldBe:`Turn %d,%d`" << endl;
+            return -1;
+        }
+        break;
+	}
+    
     if(slu->Get(x, y) != chis::BOARD_VAL::EMP) {
         cout << "ERROR InvalidMove:"<<x<<","<<y<< endl;
     }
@@ -80,7 +87,7 @@ int Board(chis::Solution* &slu) {
         }
         int x, y, t;
         if(sscanf(line.c_str(), "%d,%d,%d", &x, &y, &t) != 3) {
-            cout << "ERROR ShouldBe:`Turn %d,%d` "  <<":" <<x<<","<<y<<","<<t << endl;
+            cout << "ERROR ShouldBe:`%d,%d,%d` "  <<":" <<x<<","<<y<<","<<t << endl;
             return -1;
         }
         if(slu->Get(x, y) != chis::BOARD_VAL::EMP) {
@@ -147,6 +154,9 @@ int main() {
                 break;
             case RESTART:
                 Restart(slu); 
+                break;
+            case TAKEBACK:
+                slu->Undo();
                 break;
             default:
                 break;
