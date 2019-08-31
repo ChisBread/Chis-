@@ -36,9 +36,12 @@ class Solution {
     virtual MovWithVal Search(const size_t MAX_DEPTH = 5, const MovWithVal &recommend = {}) = 0;
     virtual void Do(int i, int j) = 0;
     virtual void Undo() = 0;
+    virtual BOARD_VAL Get(int i, int j) const = 0;
     virtual void StopSearch() = 0;
     virtual void StartSearch() = 0;
     virtual bool IsStop() = 0;
+    virtual void Reset() = 0;
+    virtual ~Solution() {};
     statInfo stat;
 };
 template <typename Board>
@@ -65,7 +68,6 @@ class solution : public Solution {
                 val = -AlphaBeta(-WON, WON, depth);
                 board.Undo();
                 mov.second = val;
-                // cout << val << endl;
                 if (val == WON) {
                     break;
                 }
@@ -79,7 +81,7 @@ class solution : public Solution {
             auto &bestMove = moves.front();
             {
                 auto [i, j] = bestMove.first;
-                cout << "最佳着法:" << i << " " << j << " " << bestMove.second
+                cout << "DEBUG " << "最佳着法:" << i << " " << j << " " << bestMove.second
                      << " " << depth << endl;
             }
             if (bestMove.second == WON || bestMove.second == -WON ||
@@ -92,6 +94,7 @@ class solution : public Solution {
    public:  //下面这些是线程安全的, 用来做超时控制，可以做到瞬间返回(截断)
     virtual void Do(int i, int j) { board.Do(i, j); } 
     virtual void Undo() { board.Undo(); }
+    virtual BOARD_VAL Get(int i, int j) const { return board.Get(i,j);}
     virtual void StopSearch() {
         std::lock_guard<std::mutex> lg(ABPtrMtx);
         AlphaBetaPtr = &solution<Board>::AlphaBetaEnd;
@@ -103,6 +106,9 @@ class solution : public Solution {
     virtual bool IsStop() {
         return AlphaBetaPtr == &solution<Board>::AlphaBetaEnd;
     }
+    virtual void Reset() {
+        board.Reset();
+    }
    public:
     //带Alpha-Beta剪枝的Min-Max, 使用NegaMax简化形式
     //增加了置换表优化
@@ -112,7 +118,6 @@ class solution : public Solution {
         if (!isZeroWin) {
             ++stat.node_cnt;
         }
-        // cout << alpha << "\t" << beta << endl;
         //命中缓存
         int maxVal = INT32_MIN;
         std::tuple<int, int> bestMove = {-1, -1};
@@ -255,7 +260,7 @@ Solution *MakeSolution(size_t size, size_t MEM_BYTE = 128000000) {
         case 20:
             return new solution<GomokuBoard<20>>(MEM_BYTE);
         default:
-            throw(std::exception("board size must in values(10,15,20)"));
+            throw(std::out_of_range("board size must in values(10,15,20)"));
     }
 }
 }  // namespace chis

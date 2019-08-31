@@ -75,7 +75,11 @@ class GomokuBoard {
         doChain.pop_back();
         return *this;
     }
-
+    void Reset() {
+        while(!doChain.empty()) {
+            Undo();
+        }
+    }
    public:
     // Hash
     uint64_t Hash() const { return zobrist.Hash(); }
