@@ -40,9 +40,11 @@ class Solution {
    public:
     Solution(size_t MEM_BYTE = 128000000)
         : TT_SIZE(MEM_BYTE / sizeof(ttInfo)), TT(MEM_BYTE / sizeof(ttInfo)) {}
-        using MovWithVal = vector_type<std::pair<std::tuple<int, int>, int>>;
+    using MovWithVal = vector_type<std::pair<std::tuple<int, int>, int>>;
+
    public:  //以下方法都是线程不安全的，一个线程建议就搞一个实例
-    MovWithVal Search(Board &board, const size_t MAX_DEPTH = 5,const MovWithVal &recommend = {}) {
+    MovWithVal Search(Board &board, const size_t MAX_DEPTH = 5,
+                      const MovWithVal &recommend = {}) {
         StartSearch();
         MovWithVal moves;
         for (auto mov : board.Moves()) {
@@ -57,7 +59,7 @@ class Solution {
                 val = -AlphaBeta(board, -WON, WON, depth);
                 board.Undo();
                 mov.second = val;
-                //cout << val << endl;
+                // cout << val << endl;
                 if (val == WON) {
                     break;
                 }
@@ -65,16 +67,17 @@ class Solution {
             std::stable_sort(moves.begin(), moves.end(), [](auto a, auto b) {
                 return a.second > b.second;
             });
-            while(moves.size() > 1 && moves.back().second == -WON) {
+            while (moves.size() > 1 && moves.back().second == -WON) {
                 moves.pop_back();
             }
             auto &bestMove = moves.front();
             {
                 auto [i, j] = bestMove.first;
-                cout << "最佳着法:" << i << " " << j << " "
-                     << bestMove.second << " " << depth << endl;
+                cout << "最佳着法:" << i << " " << j << " " << bestMove.second
+                     << " " << depth << endl;
             }
-            if (bestMove.second == WON || bestMove.second == -WON || moves.size() == 1) {
+            if (bestMove.second == WON || bestMove.second == -WON ||
+                moves.size() == 1) {
                 break;
             }
         }
@@ -84,8 +87,8 @@ class Solution {
     //增加了置换表优化
     //增加了主要变例搜索优化
     int AlphaBeta(Board &board, int alpha, int beta, int depth) {
-        bool isZeroWin = ABS(beta-alpha) == 1;
-        if(!isZeroWin) {
+        bool isZeroWin = ABS(beta - alpha) == 1;
+        if (!isZeroWin) {
             ++stat.node_cnt;
         }
         // cout << alpha << "\t" << beta << endl;
@@ -118,18 +121,18 @@ class Solution {
         auto record_tt = [&](uint64_t key, int dp, RELATION_VAL rel, int value,
                              std::tuple<int, int> mov) {
             //非零窗口且深度足够 or 胜利局面
-            if (( !isZeroWin && TT[key % TT_SIZE].depth <= dp) ||
+            if ((!isZeroWin && TT[key % TT_SIZE].depth <= dp) ||
                 (value == WON || value == -WON)) {
                 ++stat.tt_record_cnt;
                 TT[key % TT_SIZE] = {key, dp, rel, value, mov};
             }
         };
-        {  
+        {
             //叶子节点
             if (auto [val, end] = board.Ending(); end) {
                 if (!isZeroWin) {
                     ++stat.leaf_cnt;
-                    if(end) {
+                    if (end) {
                         ++stat.ending_cnt;
                     }
                 }
@@ -137,7 +140,7 @@ class Solution {
                 record_tt(board.Hash(), depth, RELATION_VAL::PV, val, bestMove);
                 return val;
             }
-            if(depth == 0) {
+            if (depth == 0) {
                 if (!isZeroWin) {
                     ++stat.leaf_cnt;
                 }
