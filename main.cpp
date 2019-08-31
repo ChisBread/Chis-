@@ -1,4 +1,4 @@
-#include <cstdio>
+﻿#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
@@ -12,13 +12,13 @@ void show() {
     board.Do(1, 1);
     board.Do(7, 8);
     board.Do(13, 13);
-    board.Do(7, 6);
+    // board.Do(7, 6);
     // board.Do(7, 9);
     // board.Do(7, 5);
     // board.Do(1, 13);
     {
         auto ret = slu.Search(board);
-        for(size_t i = 0; i < 3 && i < ret.size(); ++i) {
+        for (size_t i = 0; i < 3 && i < ret.size(); ++i) {
             auto [x, y] = ret[i].first;
             cout << x << "\t" << y << "\t" << ret[i].second << endl;
         }
@@ -33,8 +33,7 @@ void show() {
              << "最佳着法剪枝" << slu.stat.bestmove_pass_cnt << endl
              << "主要变例搜索尝试" << slu.stat.pvs_try_cnt << endl
              << "主要变例搜索剪枝" << slu.stat.pvs_pass_cnt << endl
-             << "总节点数" << slu.stat.node_cnt << endl
-             ;
+             << "总节点数" << slu.stat.node_cnt << endl;
     }
 }
 int main() {

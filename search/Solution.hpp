@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "board/gomoku.hpp"
 namespace chis {
 enum RELATION_VAL : int {
