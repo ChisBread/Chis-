@@ -2,7 +2,14 @@ cmake_minimum_required (VERSION 2.8)
 #指定项目的名称，一般和项目的文件夹名称对应
 PROJECT(Chis++)
 SET(CMAKE_CXX_STANDARD 17)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 /MD /O2")
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MD /O2")
+endif()
 #第三方库
 SET(GTEST_ROOT ${PROJECT_SOURCE_DIR}/thirdparty/googletest/googletest)
 ADD_SUBDIRECTORY(thirdparty/googletest gtest)
