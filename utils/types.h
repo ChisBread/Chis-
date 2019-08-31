@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <array>
 #include <bitset>
 #include <cstdint>
@@ -9,6 +10,7 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
+#include <mutex>
 namespace chis {
 using std::cout;
 using std::endl;

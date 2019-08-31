@@ -6,8 +6,8 @@
 #include "gtest/gtest.h"
 #include "resource/patterns.h"
 using namespace std;
-const static chis::bsize_t SIZE = 15;
-const static chis::bsize_t OFFSET = 5;
+const static size_t SIZE = 15;
+const static size_t OFFSET = 5;
 TEST(TESTBoard, Mappings) {
     //初始化Mappings
     int board[SIZE * 2][SIZE * 2] = {};
@@ -78,7 +78,7 @@ TEST(TESTBoard, BoardBase) {
     while (!hash_chain.empty()) {
         EXPECT_EQ(hash_chain.back(), board.Hash());
         hash_chain.pop_back();
-        board.Uodo();
+        board.Undo();
     }
 }
 TEST(TESTBoard, BoardPattern) {
@@ -103,7 +103,7 @@ TEST(TESTBoard, BoardPattern) {
         board[7][8] = chis::BOARD_VAL::WHT;
         check_pattern(0b0000000000100100000000);
         check_pattern_type(1);
-        board.Uodo();
+        board.Undo();
     }
     //活二
     board[7][8] = chis::BOARD_VAL::BLK;
@@ -113,7 +113,7 @@ TEST(TESTBoard, BoardPattern) {
         board[7][6] = chis::BOARD_VAL::WHT;
         check_pattern(0b0000000001101000000000);
         check_pattern_type(3);
-        board.Uodo();
+        board.Undo();
     }
     //活三
     board[7][6] = chis::BOARD_VAL::BLK;
@@ -123,7 +123,7 @@ TEST(TESTBoard, BoardPattern) {
         board[7][5] = chis::BOARD_VAL::WHT;
         check_pattern(0b0000000110101000000000);
         check_pattern_type(7);
-        board.Uodo();
+        board.Undo();
     }
     //活四
     board[7][5] = chis::BOARD_VAL::BLK;
@@ -133,7 +133,7 @@ TEST(TESTBoard, BoardPattern) {
         board[7][9] = chis::BOARD_VAL::WHT;
         check_pattern(0b0000001010101001000000);
         check_pattern_type(10);
-        board.Uodo();
+        board.Undo();
     }
     //成5
     board[7][9] = chis::BOARD_VAL::BLK;

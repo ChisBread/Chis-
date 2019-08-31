@@ -3,24 +3,20 @@
 #include "board/types.h"
 namespace chis {
 //五子棋位棋盘-基本操作
-template <bsize_t size = 15, bsize_t offset = 5>
+template <size_t size = 15, size_t offset = 5>
 class GomokuArrayBoard {
    public:  // required method
     //相对坐标
     void Set(int i, int j, const BOARD_VAL val) {
         board[i + offset][j + offset] = val;
     }
-    BOARD_VAL Get(int i, int j) const {
-        return board[i + offset][j + offset];
-    }
+    BOARD_VAL Get(int i, int j) const { return board[i + offset][j + offset]; }
     //绝对坐标
-    void SetReal(int i, int j, const BOARD_VAL val) {
-        board[i][j] = val;
-    }
+    void SetReal(int i, int j, const BOARD_VAL val) { board[i][j] = val; }
     BOARD_VAL GetReal(int i, int j) const { return board[i][j]; }
 
-    std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> GetPattern(
-        int i, int j) const {
+    std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> GetPattern(int i,
+                                                                  int j) const {
         uint32_t hp = 0, sp = 0, pp = 0, np = 0;
         for (int n = -5; n < 6; ++n) {
             auto [hx, hy] = HENG_NEXT(i + offset, j + offset, n);
