@@ -36,26 +36,28 @@ class Solution {
    public:
     Solution(size_t MEM_BYTE = 128000000)
         : TT_SIZE(MEM_BYTE / sizeof(ttInfo)), TT(MEM_BYTE / sizeof(ttInfo)) {}
-   public://以下方法都是线程不安全的，一个线程建议就搞一个实例
-    std::pair<std::tuple<int, int>, int> Search(Board &board, const size_t MAX_DEPTH = 5) {
+
+   public:  //以下方法都是线程不安全的，一个线程建议就搞一个实例
+    std::pair<std::tuple<int, int>, int> Search(Board &board,
+                                                const size_t MAX_DEPTH = 5) {
         StartSearch();
         std::vector<std::pair<std::tuple<int, int>, int>> moves;
-        for(auto mov:board.Moves()) {
+        for (auto mov : board.Moves()) {
             moves.push_back({mov, -WON});
         }
         std::pair<std::tuple<int, int>, int> bestMove = {{-1, -1}, 0};
-        for(size_t depth = 0; depth <= MAX_DEPTH; ++depth) {
-            int alpha = -WON, beta = WON;//重置窗口
+        for (size_t depth = 0; depth <= MAX_DEPTH; ++depth) {
+            int alpha = -WON, beta = WON;  //重置窗口
             bool foundPV = false;
             for (auto &mov : moves) {
                 auto [i, j] = mov.first;
                 board.Do(i, j);  //落子
-                //int val = -AlphaBeta(board, -beta, -alpha, depth);
+                // int val = -AlphaBeta(board, -beta, -alpha, depth);
                 int val;
                 //如果已经找到PV, 则后续节点使用PVS
-                if(foundPV) {
-                    val = -AlphaBeta(board, -alpha-1, -alpha, depth);
-                    if(val > alpha && val < beta) {
+                if (foundPV) {
+                    val = -AlphaBeta(board, -alpha - 1, -alpha, depth);
+                    if (val > alpha && val < beta) {
                         val = -AlphaBeta(board, -beta, -alpha, depth);
                     } else {
                         ++stat.pvs_pass_root_cnt;
@@ -69,7 +71,7 @@ class Solution {
                     alpha = val;
                     foundPV = true;
                     //返回胜利节点
-                    if(val == WON) {
+                    if (val == WON) {
                         break;
                     }
                 }
@@ -79,10 +81,11 @@ class Solution {
             });
             bestMove = moves.front();
             {
-                auto[i,j] = moves.front().first;
-                cout << "最佳着法:" << i << " " << j << " " << moves.front().second << " " << depth << endl;
+                auto [i, j] = moves.front().first;
+                cout << "最佳着法:" << i << " " << j << " "
+                     << moves.front().second << " " << depth << endl;
             }
-            if(bestMove.second == WON || bestMove.second == -WON) {
+            if (bestMove.second == WON || bestMove.second == -WON) {
                 break;
             }
         }
@@ -98,7 +101,7 @@ class Solution {
         std::tuple<int, int> bestMove = {-1, -1};
         if (ttInfo tt = TT[board.Hash() % TT_SIZE];
             tt.key == board.Hash() &&
-            (depth <= tt.depth || (tt.value == WON || tt.value == -WON)) ) {
+            (depth <= tt.depth || (tt.value == WON || tt.value == -WON))) {
             if (tt.rel == RELATION_VAL::PV) {
                 //如果是真实值，则直接选用
                 ++stat.tt_pv_pass_cnt;
@@ -118,18 +121,19 @@ class Solution {
                 bestMove = tt.bestMove;
             }
         }
-        auto record_tt = [&](uint64_t key, int dp, RELATION_VAL rel, int value, std::tuple<int, int> mov) {
+        auto record_tt = [&](uint64_t key, int dp, RELATION_VAL rel, int value,
+                             std::tuple<int, int> mov) {
             //非零窗口且深度足够 or 胜利局面
-            if( ((beta-alpha!=1) && TT[key % TT_SIZE].depth<=dp) || 
+            if (((beta - alpha != 1) && TT[key % TT_SIZE].depth <= dp) ||
                 (value == WON || value == -WON)) {
                 ++stat.tt_record_cnt;
-                TT[key % TT_SIZE] = {key, dp, rel, value, mov};    
+                TT[key % TT_SIZE] = {key, dp, rel, value, mov};
             }
         };
         {  //正常结束
             //叶子节点
             if (depth == 0) {
-                if(beta-alpha!=1) {
+                if (beta - alpha != 1) {
                     ++stat.leaf_cnt;
                 }
                 auto val = board.Evaluation();
@@ -137,7 +141,7 @@ class Solution {
                 return val;
             }
             if (auto [val, ok] = board.Ending(); ok) {
-                if(beta-alpha!=1) {
+                if (beta - alpha != 1) {
                     ++stat.leaf_cnt;
                 }
                 //局面终结
@@ -145,7 +149,7 @@ class Solution {
                 return val;
             }
         }
-        
+
         //搜索一个着法，如果返回在窗口内，则更新alpha.
         //如果在窗口外，则更新置换表，返回out
         bool foundPV = false;
@@ -157,15 +161,18 @@ class Solution {
             auto [val, out] = [&]() -> std::tuple<int, bool> {
                 int val;
                 //如果已经找到PV, 则后续节点使用PVS
-                if(foundPV) {
-                    val = -(this->*AlphaBetaPtr)(board, -alpha-1, -alpha, next_depth);
-                    if(val > alpha && val < beta) {
-                        val = -(this->*AlphaBetaPtr)(board, -beta, -alpha, next_depth);
+                if (foundPV) {
+                    val = -(this->*AlphaBetaPtr)(board, -alpha - 1, -alpha,
+                                                 next_depth);
+                    if (val > alpha && val < beta) {
+                        val = -(this->*AlphaBetaPtr)(board, -beta, -alpha,
+                                                     next_depth);
                     } else {
                         ++stat.pvs_pass_cnt;
                     }
                 } else {
-                    val = -(this->*AlphaBetaPtr)(board, -beta, -alpha, next_depth);
+                    val = -(this->*AlphaBetaPtr)(board, -beta, -alpha,
+                                                 next_depth);
                 }
                 if (val >= beta) {
                     return {beta, true};
@@ -182,7 +189,8 @@ class Solution {
                 bestMove = mov;
             }
             if (out) {
-                record_tt(board.Hash(), depth, RELATION_VAL::BETA, beta, bestMove);
+                record_tt(board.Hash(), depth, RELATION_VAL::BETA, beta,
+                          bestMove);
             }
             return out;
         };
@@ -203,14 +211,13 @@ class Solution {
             }
         }
         //没有out, 更新置换表
-        record_tt(board.Hash(), 
-            depth, 
-            maxVal == alpha ? RELATION_VAL::PV : RELATION_VAL::ALPHA, 
-            alpha, 
-            bestMove);
+        record_tt(board.Hash(), depth,
+                  maxVal == alpha ? RELATION_VAL::PV : RELATION_VAL::ALPHA,
+                  alpha, bestMove);
         return alpha;
     }
-   public://下面这些是线程安全的, 用来做超时控制，可以做到瞬间返回(截断)
+
+   public:  //下面这些是线程安全的, 用来做超时控制，可以做到瞬间返回(截断)
     void StopSearch() {
         std::lock_guard<std::mutex> lg(ABPtrMtx);
         AlphaBetaPtr = &Solution<Board>::AlphaBetaEnd;
@@ -219,17 +226,17 @@ class Solution {
         std::lock_guard<std::mutex> lg(ABPtrMtx);
         AlphaBetaPtr = &Solution<Board>::AlphaBeta;
     }
-    bool IsStop() {
-        return AlphaBetaPtr == &Solution<Board>::AlphaBetaEnd;
-    }
+    bool IsStop() { return AlphaBetaPtr == &Solution<Board>::AlphaBetaEnd; }
     int AlphaBetaEnd(Board &board, int alpha, int beta, int depth) {
-        return AlphaBeta(board, alpha, beta, 0);//跳到叶节点
+        return AlphaBeta(board, alpha, beta, 0);  //跳到叶节点
     }
+
    public:
     const size_t TT_SIZE;
     vector_type<ttInfo> TT;
     statInfo stat;
     std::mutex ABPtrMtx;
-    int (Solution<Board>::*AlphaBetaPtr)(Board&, int, int, int) = &Solution<Board>::AlphaBeta;
+    int (Solution<Board>::*AlphaBetaPtr)(Board &, int, int,
+                                         int) = &Solution<Board>::AlphaBeta;
 };
 }  // namespace chis

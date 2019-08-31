@@ -108,9 +108,10 @@ class GomokuBoard {
             val = WON;
         } else if (pinfo.pattern_cnt_wht[13]) {
             val = -WON;
-        } else {   
+        } else {
             for (size_t i = 1; i < 14; ++i) {
-                val += (pinfo.pattern_cnt_blk[i] * evaluation[i]);  //棋型间2倍差
+                val +=
+                    (pinfo.pattern_cnt_blk[i] * evaluation[i]);  //棋型间2倍差
                 val -= (pinfo.pattern_cnt_wht[i] * evaluation[i]);
             }
         }
