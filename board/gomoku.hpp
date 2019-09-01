@@ -210,8 +210,9 @@ class GomokuBoard {
                     return -WON;
                 }
 			}
-            // B没有成4点，则主动进攻
-            if (!(B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B] || B[PAT_TYPE::S3])) {
+            // B没有成4或成5点，则主动进攻
+            if (!(B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] || B[PAT_TYPE::S4] ||
+                  B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B] || B[PAT_TYPE::S3])) {
                 // A必胜的情况
                 // A成活四
                 if ( A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B]) {
