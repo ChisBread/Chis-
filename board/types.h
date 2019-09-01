@@ -3,7 +3,7 @@
 #include "utils/zobrist_hash.hpp"
 namespace chis {
 //棋盘值类型
-enum BOARD_VAL : uint8_t {  //一些值
+enum BOARD_VAL : uint32_t {  //一些值
     EMP = 0b00,             //空
     WHT = 0b01,             //白
     BLK = 0b10,             //黑

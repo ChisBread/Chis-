@@ -46,8 +46,11 @@ class Solution {
     virtual bool IsStop() = 0;
     virtual void Reset(size_t MEM_BYTE = 128000000) = 0;
     virtual pattern_info PatternInfo() = 0;
-    virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(int i,
-                                                                  int j) = 0;
+    virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> 
+    GetPatternType(int i, int j) = 0;
+    virtual std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> 
+    GetPattern(int i, int j) = 0;
+    virtual int32_t Evaluation() = 0;
     virtual ~Solution(){};
     statInfo stat;
 };
@@ -102,7 +105,6 @@ class solution : public Solution {
    public:  //下面这些是线程安全的, 用来做超时控制，可以做到瞬间返回(截断)
     virtual void Do(int i, int j) { board.Do(i, j); }
     virtual void Undo() { board.Undo(); }
-    virtual BOARD_VAL Get(int i, int j) const { return board.Get(i, j); }
     virtual void StopSearch() {
         std::lock_guard<std::mutex> lg(ABPtrMtx);
         AlphaBetaPtr = &solution<Board>::AlphaBetaEnd;
@@ -119,10 +121,16 @@ class solution : public Solution {
         TT_SIZE = MEM_BYTE / sizeof(ttInfo), TT = vector_type<ttInfo>(TT_SIZE);
     }
     virtual pattern_info PatternInfo() { return board.PatternInfo(); }
-	virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(
-		int i, int j) {
+    virtual BOARD_VAL Get(int i, int j) const { return board.Get(i, j); }
+	virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> 
+    GetPatternType(int i, int j) {
         return board.GetPatternType(i, j);
 	}
+    virtual std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> 
+    GetPattern(int i, int j) {
+        return board.GetPattern(i, j);
+    }
+    virtual int32_t Evaluation() {return board.Evaluation();}
    public:
     //带Alpha-Beta剪枝的Min-Max, 使用NegaMax简化形式
     //增加了置换表优化

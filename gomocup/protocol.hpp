@@ -104,8 +104,6 @@ class GomocupProto {
         return rets.front().first;
     }
     void Do(int x, int y) {
-        io.Debug() << "///////////BEFORE MOVE///////////" << std::endl;
-		ShowPointPattrtn(x, y);
 		slu->Do(x, y);
         io.Debug() << "///////////AFTER MOVE"
                    << "(" << x << "," << y
@@ -267,7 +265,7 @@ class GomocupProto {
                 "死棋", "眠一",  "活一",  "眠二", "活二A", "活二B", "活二C",
                 "眠三", "活三A", "活三B", "眠四", "活四A", "活四B", "成五",
             };
-            for (int i = 1; i < 14; ++i) {
+            for (int i = 0; i < 14; ++i) {
                 if (!slu->PatternInfo().pattern_cnt_blk[i] &&
                     !slu->PatternInfo().pattern_cnt_wht[i]) {
                     continue;
@@ -292,7 +290,7 @@ class GomocupProto {
                 ++cnts_wht[pat >> 4];
             }
         }
-        for (int i = 1; i < 14; ++i) {
+        for (int i = 0; i < 14; ++i) {
             if (!cnts_blk[i] && !cnts_wht[i]) {
                 //continue;
             }

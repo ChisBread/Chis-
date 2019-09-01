@@ -47,24 +47,8 @@ class GomokuBoard {
     GomokuBoardType &Do(int i, int j) { return Do(i, j, Turn()); }
     GomokuBoardType &Do(int i, int j, const BOARD_VAL v) {
         doChain.push_back(do_info{i, j, v, pinfo});
-        {  //减去当前状态
-            uint8_t pats[4];
-            std::tie(pats[0], pats[1], pats[2], pats[3]) = GetPatternType(i, j);
-            for (auto pat : pats) {
-                --pinfo.pattern_cnt_blk[pat & 0xf];
-                --pinfo.pattern_cnt_wht[pat >> 4];
-            }
-        }
         board.Set(i, j, v);    //棋盘变化
         zobrist.Set(i, j, v);  // hash变化
-        {                      //累加新状态
-            uint8_t pats[4];
-            std::tie(pats[0], pats[1], pats[2], pats[3]) = GetPatternType(i, j);
-            for (auto pat : pats) {
-                ++pinfo.pattern_cnt_blk[pat & 0xf];
-                ++pinfo.pattern_cnt_wht[pat >> 4];
-            }
-        }
         return *this;
     }
     //撤销落子
@@ -76,7 +60,57 @@ class GomokuBoard {
         doChain.pop_back();
         return *this;
     }
-	pattern_info PatternInfo() { return pinfo;}
+	pattern_info PatternInfo() {
+        if(Hash() == pinfoSig) {
+            return pinfo;
+        }
+        pinfo = pattern_info{};//清空
+        bool dedup[size+offset*2][size+offset*2][4] = {};//记录棋型中的有效值，出现过的不再遍历
+        for(auto &doItem:doChain) {
+            int x = doItem.i, y = doItem.j;
+            BOARD_VAL centerVal = board.Get(x,y);
+            uint32_t pats[4] = {};//4个方向的棋型
+            for(int fi = 0; fi < 4; ++fi) {//横竖撇捺下标
+                if(dedup[x+offset][y+offset][fi]) {
+                    continue;
+                }
+                pats[fi] = centerVal << 10;//初始点在中心
+                for (int n = 1; n < 6; ++n) {//1~5个偏移,正方向
+                    //得到偏移坐标
+                    auto [nx, ny] = Nexts[fi](x, y, n);
+                    uint32_t val = board.Get(nx,ny);//对应的值
+                    //如果是边界
+                    if(val != BOARD_VAL::EMP && val != centerVal) {
+                        pats[fi] |= BOARD_VAL::INV << (n+5)*2;//偏移对应位数 12~20
+                        break;
+                    }
+                    dedup[nx+offset][ny+offset][fi] = true;
+                    pats[fi] |= val << (n+5)*2;//偏移对应位数 12~20
+                }
+                for (int n = 1; n < 6; ++n) {//1~5个偏移,负方向
+                    //得到偏移坐标
+                    auto [nx, ny] = Nexts[fi](x, y, -n);
+                    uint32_t val = board.Get(nx,ny);//对应的值
+                    //如果是边界
+                    if(val != BOARD_VAL::EMP && val != centerVal) {
+                        pats[fi] |= BOARD_VAL::INV << (5-n)*2;//偏移对应位数 8~0
+                        break;
+                    }
+                    dedup[nx+offset][ny+offset][fi] = true;
+                    pats[fi] |= val << (5-n)*2;//偏移对应位数 8~0
+                }
+            }
+            for (auto pat : pats) {//转化成具体类型存在返回值里
+                if(centerVal == BOARD_VAL::BLK) {
+                    ++pinfo.pattern_cnt_blk[pattern_type[pat] & 0xf];
+                } else {
+                    ++pinfo.pattern_cnt_wht[pattern_type[pat] >> 4];
+                }
+            }
+        }
+        pinfoSig = Hash();
+        return pinfo;
+    }
     void Reset() {
         while (!doChain.empty()) {
             Undo();
@@ -128,9 +162,10 @@ class GomokuBoard {
         return ret;
     }
     // 评估函数 NegaEva
-    int32_t Evaluation() const {
+    int32_t Evaluation() {
         static const int evaluation[14] = {0,  1,   10,  12,  30,   35,   40,
                                            45, 100, 120, 230, 1000, 1000, WON};
+        PatternInfo();//更新一下棋型
         int val = 0;
         for (int i = 1; i < 14; ++i) {
             val += (pinfo.pattern_cnt_blk[i] * evaluation[i]);
@@ -138,7 +173,8 @@ class GomokuBoard {
         }
         return Turn() == BOARD_VAL::WHT ? -val : val;
     }
-    std::tuple<int32_t, bool> Ending() const {
+    std::tuple<int32_t, bool> Ending() {
+        PatternInfo();//更新一下棋型
         if (doChain.size() == size * size) {
             return {0, true};
         }
@@ -154,25 +190,23 @@ class GomokuBoard {
                 return WON;
             }
 			// A先手，有4直接赢
-            else if (A[PAT_TYPE::L4A] || A[PAT_TYPE::L4B] ) {
-                return WON;
-            }
-			//到这里，A已经没5没4了
-			// A没有成4点（只能被动防守）
-            /*
-            if (!(A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B] || A[PAT_TYPE::S3])) {
-                // B下一把有两个及以上成4点，堵不住
-                if (B[PAT_TYPE::L4A] + B[PAT_TYPE::L4B] + B[PAT_TYPE::S4] > 1) {
-                    return -WON;
-                }
-                // B下一把有一个成4点（只能防守），同时又有成活四点
-                else if ((B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] ||
-                          B[PAT_TYPE::S4]) &&
-                         (B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B])) {
-                    return -WON;
-                }
-			}
-                        */
+            // else if (A[PAT_TYPE::L4A] || A[PAT_TYPE::L4B] ) {
+            //     return WON;
+            // }
+			// //到这里，A已经没5没4了
+			// // A没有成4点（只能被动防守）
+            // if (!(A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B] || A[PAT_TYPE::S3])) {
+            //     // B下一把有两个及以上成4点，堵不住
+            //     if (B[PAT_TYPE::L4A] + B[PAT_TYPE::L4B] + B[PAT_TYPE::S4] > 1) {
+            //         return -WON;
+            //     }
+            //     // B下一把有一个成4点（只能防守），同时又有成活四点
+            //     else if ((B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] ||
+            //               B[PAT_TYPE::S4]) &&
+            //              (B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B])) {
+            //         return -WON;
+            //     }
+			// }
             
             return 0;
         };
@@ -183,7 +217,7 @@ class GomokuBoard {
         }
         return {Turn() == BOARD_VAL::WHT ? -val : val, val != 0};
     }
-    int32_t PointEvaluation(int i, int j) const {
+    int32_t PointEvaluation(int i, int j) {
         static const int evaluation[14] = {0,  1,   10,  12,  30,   35,   40,
                                            45, 100, 120, 130, 1000, 1000, WON};
         int32_t val = 0;
@@ -199,14 +233,14 @@ class GomokuBoard {
     //取值
     BOARD_VAL Get(int i, int j) const { return board.Get(i, j); }
     //得到点附近的棋型
-    std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(int i,
-                                                                  int j) const {
+    std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> 
+    GetPatternType(int i, int j) const {
         auto [h, s, p, n] = board.GetPattern(i, j);
-        return {pattern_type[h], pattern_type[s], pattern_type[p],
-                pattern_type[n]};
+        return {pattern_type[h], pattern_type[s], 
+                pattern_type[p], pattern_type[n]};
     }
-    std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> GetPattern(int i,
-                                                                  int j) const {
+    std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> 
+    GetPattern(int i, int j) const {
         return board.GetPattern(i, j);
     }
 
@@ -222,6 +256,7 @@ class GomokuBoard {
     // pattern
     GomokuPatterns pattern_type;
     pattern_info pinfo;
+    uint64_t pinfoSig;
 };
 template <typename BTy, typename VTy>
 using GomokuBoardMap = std::unordered_map<BTy, VTy, typename BTy::hash_func,

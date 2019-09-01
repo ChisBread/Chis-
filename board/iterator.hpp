@@ -15,4 +15,6 @@ inline std::tuple<int, int> NA_NEXT(const int i, const int j, const int n) {
     //↘
     return {i + n, j + n};
 }
+using NextFunc = std::tuple<int, int> (*)(const int i, const int j, const int n);
+static NextFunc Nexts[] = {HENG_NEXT, SHU_NEXT, PIE_NEXT, NA_NEXT};
 }  // namespace chis
