@@ -5,8 +5,7 @@ enum RELATION_VAL : int {
     INVALID = 0,
     PV = 1,
     ALPHA = 2,
-    BETA = 2,
-    END = 3,
+    BETA = 2,  //置换表内的值比
 };
 //置换表信息
 struct ttInfo {
@@ -21,9 +20,7 @@ struct statInfo {
     size_t leaf_cnt = 0;
     size_t ending_cnt = 0;
     size_t tt_record_cnt = 0;
-    size_t tt_record_ending_cnt = 0;
     size_t tt_hit_cnt = 0;
-    size_t tt_ending_pass_cnt = 0;
     size_t tt_pv_pass_cnt = 0;
     size_t tt_alpha_pass_cnt = 0;
     size_t tt_beta_pass_cnt = 0;
@@ -127,48 +124,35 @@ class solution : public Solution {
         int maxVal = INT32_MIN;
         std::tuple<int, int> bestMove = {-1, -1};
         if (ttInfo tt = TT[board.Hash() % TT_SIZE];
-            tt.key == board.Hash()) {
-            ++stat.tt_hit_cnt;//命中key
-            //如果是结束，则直接选用
-            if (tt.rel == RELATION_VAL::END) {
-                ++stat.tt_ending_pass_cnt;
+            tt.key == board.Hash() &&
+            (depth <= tt.depth || (tt.value == WON || tt.value == -WON))) {
+            ++stat.tt_hit_cnt;
+            if (tt.rel == RELATION_VAL::PV) {
+                //如果是真实值，则直接选用
+                ++stat.tt_pv_pass_cnt;
                 return tt.value;
+            } else if (tt.rel == RELATION_VAL::ALPHA &&
+                       tt.value <= alpha) {  //有效窗口值
+                //如果是辣鸡节点，直接返回alpha
+                ++stat.tt_alpha_pass_cnt;
+                return alpha;
+            } else if (tt.rel == RELATION_VAL::BETA &&
+                       tt.value >= beta) {  //有效窗口值
+                //如果是厉害节点，直接返回beta
+                ++stat.tt_beta_pass_cnt;
+                return beta;
             }
-            if(depth <= tt.depth) {
-                if (tt.rel == RELATION_VAL::PV) {
-                    //如果是真实值，则直接选用
-                    ++stat.tt_pv_pass_cnt;
-                    return tt.value;
-                } else if (tt.rel == RELATION_VAL::ALPHA &&
-                        tt.value <= alpha) {  //有效窗口值
-                    //如果是辣鸡节点，直接返回alpha
-                    ++stat.tt_alpha_pass_cnt;
-                    return alpha;
-                } else if (tt.rel == RELATION_VAL::BETA &&
-                        tt.value >= beta) {  //有效窗口值
-                    //如果是厉害节点，直接返回beta
-                    ++stat.tt_beta_pass_cnt;
-                    return beta;
-                }
-                if (auto [i, j] = tt.bestMove; i != -1 && j != -1) {
-                    bestMove = tt.bestMove;
-                }
+            if (auto [i, j] = tt.bestMove; i != -1 && j != -1) {
+                bestMove = tt.bestMove;
             }
-            
         }
         auto record_tt = [&](uint64_t key, int dp, RELATION_VAL rel, int value,
                              std::tuple<int, int> mov) {
-            //深度优先替换
-            if(TT[key % TT_SIZE].depth <= dp) {
-                if(value == WON || value == -WON) {
-                    ++stat.tt_record_ending_cnt;
-                    TT[key % TT_SIZE] = {key, dp, RELATION_VAL::END, value, mov};
-                } else if (isZeroWin) {//非零窗口
-                    ++stat.tt_record_cnt;
-                    TT[key % TT_SIZE] = {key, dp, rel, value, mov};
-                }
+            //深度足够  非零窗口or胜利局面
+            if(TT[key % TT_SIZE].depth <= dp && (value == WON || value == -WON || isZeroWin)) {
+                ++stat.tt_record_cnt;
+                TT[key % TT_SIZE] = {key, dp, rel, value, mov};
             }
-            //TODO 时效优先替换
         };
         {
             //叶子节点
@@ -211,7 +195,7 @@ class solution : public Solution {
                     val = -(this->*AlphaBetaPtr)(-beta, -alpha, next_depth);
                 }
                 if (val >= beta) {
-                    return {val, true};
+                    return {beta, true};
                 } else if (val > alpha) {
                     alpha = val;
                     foundPV = true;
@@ -225,7 +209,7 @@ class solution : public Solution {
                 bestMove = mov;
             }
             if (out) {
-                record_tt(board.Hash(), depth, RELATION_VAL::BETA, maxVal,
+                record_tt(board.Hash(), depth, RELATION_VAL::BETA, beta,
                           bestMove);
             }
             return out;
@@ -236,7 +220,7 @@ class solution : public Solution {
             bool out = search_move(bestMove, depth - 1);
             if (out) {
                 ++stat.bestmove_pass_cnt;
-                return maxVal;
+                return beta;
             }
         }
         //着法生成,正常搜索
@@ -244,14 +228,14 @@ class solution : public Solution {
             // beta节点 被截断
             bool out = search_move(mov, depth - 1);
             if (out) {
-                return maxVal;
+                return beta;
             }
         }
         //没有out, 更新置换表
         record_tt(board.Hash(), depth,
                   maxVal == alpha ? RELATION_VAL::PV : RELATION_VAL::ALPHA,
-                  maxVal, bestMove);
-        return maxVal;
+                  alpha, bestMove);
+        return alpha;
     }
     int AlphaBetaEnd(int alpha, int beta, int depth) {
         return AlphaBeta(alpha, beta, 0);  //跳到叶节点
