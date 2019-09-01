@@ -7,13 +7,10 @@
 using namespace std;
 void show() {
     chis::Solution *slu = chis::MakeSolution(15);
-    slu->Do(7, 7);
-    slu->Do(1, 1);
-    slu->Do(7, 8);
-    slu->Do(13, 13);
-    // slu->Do(7, 6);
-    // slu->Do(7, 9);
-    // slu->Do(7, 5);
+    slu->Do(7, 7);slu->Do(1, 1);
+    slu->Do(7, 8);slu->Do(13, 13);
+    slu->Do(7, 6);slu->Do(7, 9);
+    //slu->Do(7, 5);
     // slu->Do(1, 13);
     {
         auto ret = slu->Search();
@@ -25,7 +22,8 @@ void show() {
              << "胜利节点" << slu->stat.ending_cnt << endl
              << "置换表写入" << slu->stat.tt_record_cnt << endl
              << "置换表命中" << slu->stat.tt_hit_cnt << endl
-             << "节点置换(主要变例)" << slu->stat.tt_pv_pass_cnt << endl
+             << "节点置换(end)" << slu->stat.tt_ending_pass_cnt << endl
+             << "节点置换(pv)" << slu->stat.tt_pv_pass_cnt << endl
              << "节点置换(alpha)" << slu->stat.tt_alpha_pass_cnt << endl
              << "节点置换(beta)" << slu->stat.tt_beta_pass_cnt << endl
              << "最佳着法尝试" << slu->stat.bestmove_try_cnt << endl

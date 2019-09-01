@@ -137,7 +137,6 @@ class GomokuBoard {
         return Turn() == BOARD_VAL::WHT ? -val : val;
     }
     std::tuple<int32_t, bool> Ending() const {
-        //静态搜索
         if (doChain.size() == size * size) {
             return {0, true};
         }
