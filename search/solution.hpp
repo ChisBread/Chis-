@@ -34,11 +34,19 @@ struct statInfo {
     size_t node_cnt = 0;
 };
 using MovWithVal = vector_type<std::pair<std::tuple<int, int>, int>>;
+using MovsTy = vector_type<std::tuple<int, int>>;
 class Solution {
    public:
     virtual MovWithVal Search(const size_t MAX_DEPTH = 5,
                               const MovWithVal &recommend = {}) = 0;
     virtual void Do(int i, int j) = 0;
+    void Do(MovsTy movs) {
+        for (auto mov : movs) {
+            auto [i, j] = mov;
+            Do(i, j);
+        }
+    };
+    virtual MovsTy GetDoChain() const = 0;
     virtual void Undo() = 0;
     virtual BOARD_VAL Get(int i, int j) const = 0;
     virtual void StopSearch() = 0;
@@ -46,10 +54,10 @@ class Solution {
     virtual bool IsStop() = 0;
     virtual void Reset(size_t MEM_BYTE = 128000000) = 0;
     virtual pattern_info PatternInfo() = 0;
-    virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> 
-    GetPatternType(int i, int j) = 0;
-    virtual std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> 
-    GetPattern(int i, int j) = 0;
+    virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(
+        int i, int j) = 0;
+    virtual std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> GetPattern(
+        int i, int j) = 0;
     virtual int32_t Evaluation() = 0;
     virtual ~Solution(){};
     statInfo stat;
@@ -118,19 +126,31 @@ class solution : public Solution {
     }
     virtual void Reset(size_t MEM_BYTE = 128000000) {
         board.Reset();
-        TT_SIZE = MEM_BYTE / sizeof(ttInfo), TT = vector_type<ttInfo>(TT_SIZE);
+        TT_SIZE = MEM_BYTE / sizeof(ttInfo);
+		{ 
+			vector_type<ttInfo>().swap(TT);
+		}    
+        TT = vector_type<ttInfo>(TT_SIZE);
     }
     virtual pattern_info PatternInfo() { return board.PatternInfo(); }
+    virtual MovsTy GetDoChain() const {
+        MovsTy ret;
+        for (auto d : board.doChain) {
+            ret.push_back({d.i, d.j});
+        }
+        return ret;
+    }
     virtual BOARD_VAL Get(int i, int j) const { return board.Get(i, j); }
-	virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> 
-    GetPatternType(int i, int j) {
+    virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(
+        int i, int j) {
         return board.GetPatternType(i, j);
-	}
-    virtual std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> 
-    GetPattern(int i, int j) {
+    }
+    virtual std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> GetPattern(
+        int i, int j) {
         return board.GetPattern(i, j);
     }
-    virtual int32_t Evaluation() {return board.Evaluation();}
+    virtual int32_t Evaluation() { return board.Evaluation(); }
+
    public:
     //带Alpha-Beta剪枝的Min-Max, 使用NegaMax简化形式
     //增加了置换表优化
@@ -141,26 +161,25 @@ class solution : public Solution {
         //命中缓存
         int maxVal = INT32_MIN;
         std::tuple<int, int> bestMove = {-1, -1};
-        if (ttInfo tt = TT[board.Hash() % TT_SIZE];
-            tt.key == board.Hash()) {
-            ++stat.tt_hit_cnt;//命中key
+        if (ttInfo tt = TT[board.Hash() % TT_SIZE]; tt.key == board.Hash()) {
+            ++stat.tt_hit_cnt;  //命中key
             //如果是结束，则直接选用
             if (tt.rel == RELATION_VAL::END) {
                 ++stat.tt_ending_pass_cnt;
                 return tt.value;
             }
-            if(depth <= tt.depth) {
+            if (depth <= tt.depth) {
                 if (tt.rel == RELATION_VAL::PV) {
                     //如果是真实值，则直接选用
                     ++stat.tt_pv_pass_cnt;
                     return tt.value;
                 } else if (tt.rel == RELATION_VAL::ALPHA &&
-                        tt.value <= alpha) {  //有效窗口值
+                           tt.value <= alpha) {  //有效窗口值
                     //如果是辣鸡节点，直接返回alpha
                     ++stat.tt_alpha_pass_cnt;
                     return alpha;
                 } else if (tt.rel == RELATION_VAL::BETA &&
-                        tt.value >= beta) {  //有效窗口值
+                           tt.value >= beta) {  //有效窗口值
                     //如果是厉害节点，直接返回beta
                     ++stat.tt_beta_pass_cnt;
                     return beta;
@@ -169,26 +188,25 @@ class solution : public Solution {
                     bestMove = tt.bestMove;
                 }
             }
-            
         }
         auto record_tt = [&](uint64_t key, int dp, RELATION_VAL rel, int value,
                              std::tuple<int, int> mov) {
             //深度优先替换
-            if(TT[key % TT_SIZE].depth <= dp) {
-                if(value == WON || value == -WON) {
+            if (TT[key % TT_SIZE].depth <= dp) {
+                if (value == WON || value == -WON) {
                     ++stat.tt_record_ending_cnt;
-                    TT[key % TT_SIZE] = {key, dp, RELATION_VAL::END, value, mov};
-                } else if (!isZeroWin) {//非零窗口
+                    TT[key % TT_SIZE] = {key, dp, RELATION_VAL::END, value,
+                                         mov};
+                } else if (!isZeroWin) {  //非零窗口
                     ++stat.tt_record_cnt;
                     TT[key % TT_SIZE] = {key, dp, rel, value, mov};
                 }
             }
-            //TODO 时效优先替换
+            // TODO 时效优先替换
         };
         {
             //叶子节点
             if (auto [val, end] = board.Ending(); end) {
-                
                 ++stat.leaf_cnt;
                 ++stat.ending_cnt;
                 //局面终结

@@ -12,7 +12,7 @@ namespace chis {
 struct GomocupConfig {
     int timeout_turn = 30000;    // 步时
     int timeout_match = 180000;  // 局时
-    int max_memory = 367001600;  // 内存(bytes)
+    int max_memory = 100001600;  // 内存(bytes)
     int time_left = 180000;      // 余时
     int game_type = 1;           // 类型
     int rule = 0;                // 规则
@@ -126,7 +126,7 @@ class GomocupProto {
         int size;
         io >> size;
         try {
-            slu = chis::MakeSolution(size, config.max_memory * (9.0 / 10));
+            slu = chis::MakeSolution(size, config.max_memory * 0.8);
         } catch (std::exception e) {
             io.Error() << "Exception:" << e.what() << std::endl;
             return -1;
@@ -203,7 +203,9 @@ class GomocupProto {
         } else if (key == "max_memory") {
             config.max_memory = atoi(val.c_str());
             io.Debug() << "accepted max_memory:" << config.max_memory << endl;
+            auto dos = slu->GetDoChain();
             Restart();//重设内存
+            slu->Do(dos);
             io.Debug() << "mem reset" << endl;
         } else if (key == "time_left") {
             config.time_left = atoi(val.c_str());
@@ -221,7 +223,7 @@ class GomocupProto {
         return 0;
     }
     int Restart() {
-        slu->Reset(config.max_memory * (9.0 / 10));
+        slu->Reset(config.max_memory * 0.8);
         return 0;
     }
     int Takeback() {

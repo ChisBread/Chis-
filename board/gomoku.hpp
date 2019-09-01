@@ -9,6 +9,7 @@ struct pattern_info {
     int pattern_cnt_blk[16] = {};
     int pattern_cnt_wht[16] = {};
 };
+
 //五子棋棋盘-状态/Hash/...
 template <size_t size = 15, size_t offset = 5,
           typename BoardTy = GomokuArrayBoard<size, offset>>
@@ -119,7 +120,9 @@ class GomokuBoard {
     // Hash
     uint64_t Hash() const { return zobrist.Hash(); }
     // 着法生成
-    vector_type<std::tuple<int, int>> Moves() const {
+    vector_type<std::tuple<int, int>> 
+	Moves(bool must = false) {
+        PatternInfo();// TODO 根据棋型剪枝
         if (doChain.empty()) {
             return {{size / 2, size / 2}};
         }
@@ -151,12 +154,110 @@ class GomokuBoard {
                 }
             }
         }
-        std::sort(sorted.begin(), sorted.end(),
-                  [](auto a, auto b) { return a.second > b.second; });
+        
         vector_type<std::tuple<int, int>> ret;
-        for (auto &s : sorted) {
-            ret.push_back({s.first});
-        }
+        auto enemy_pat = Turn() == BOARD_VAL::BLK ? pinfo.pattern_cnt_wht
+                                                   : pinfo.pattern_cnt_blk;
+
+        auto me_pat = Turn() == BOARD_VAL::BLK ? pinfo.pattern_cnt_blk
+                                                  : pinfo.pattern_cnt_wht;
+        if (!must && ((me_pat[PAT_TYPE::S4] || me_pat[PAT_TYPE::L4A] ||
+                       me_pat[PAT_TYPE::L4B] || me_pat[PAT_TYPE::L3A] ||
+                       me_pat[PAT_TYPE::L3B]) ||
+                      (enemy_pat[PAT_TYPE::S4] || enemy_pat[PAT_TYPE::L4A] ||
+                       enemy_pat[PAT_TYPE::L4B] || enemy_pat[PAT_TYPE::L3A] ||
+                       enemy_pat[PAT_TYPE::L3B]))) {//是否必须生成全部着法，是否有
+            vector_type<std::tuple<int, int>> coods[2][14];
+            for (auto &item : sorted) {
+                auto [x, y] = item.first;
+                uint8_t pats[4] = {};
+				//敌方
+                std::tie(pats[0], pats[1], pats[2], pats[3]) = GetPatternType(
+                    x, y,
+                    Turn() == BOARD_VAL::BLK ? BOARD_VAL::WHT : BOARD_VAL::BLK);
+                int enemy_info[16] = {};
+                PAT_TYPE enemy_pty = PAT_TYPE::NON;
+                for (int i = 0; i < 4; ++i) {
+                    if (Turn() == BOARD_VAL::BLK) {//白色反派
+                        pats[i] = pats[i] >> 4;
+                    } else {
+                        pats[i] = pats[i] & 0x0F;
+                    }
+                    ++enemy_info[pats[i]];
+                    if (enemy_pty < pats[i]) {
+                        enemy_pty = PAT_TYPE(pats[i]);
+                    }
+                }
+				//己方
+                std::tie(pats[0], pats[1], pats[2], pats[3]) = GetPatternType(
+                    x, y,
+                    Turn() == BOARD_VAL::BLK ? BOARD_VAL::BLK : BOARD_VAL::WHT);
+                int me_info[16] = {};
+                PAT_TYPE me_pty = PAT_TYPE::NON;
+                for (int i = 0; i < 4; ++i) {
+                    if (Turn() == BOARD_VAL::BLK) {
+                        pats[i] = pats[i] & 0x0F;
+                    } else {
+                        pats[i] = pats[i] >> 4;
+                    }
+                    ++me_info[pats[i]];
+                    if (me_pty < pats[i]) {
+                        me_pty = PAT_TYPE(pats[i]);
+                    }
+                }
+
+				//优先级判断
+                if (me_info[PAT_TYPE::FIVE]) {
+                    return {{x, y}};//成五点直接返回就行
+				}
+                coods[enemy_pty > me_pty ? 1 : 0]
+                     [enemy_pty > me_pty ? enemy_pty : me_pty]
+                                         .push_back(item.first);
+
+            }
+            if (!coods[1][PAT_TYPE::FIVE].empty()) {
+				//对面有成5点
+                return coods[1][PAT_TYPE::FIVE];
+            } else if (!coods[0][PAT_TYPE::L4A].empty() ||
+                       !coods[0][PAT_TYPE::L4B].empty()) {
+				//自己有成活4点
+                for (auto m : coods[0][PAT_TYPE::L4A]) {
+                    ret.push_back(m);
+                }
+                for (auto m : coods[0][PAT_TYPE::L4B]) {
+                    ret.push_back(m);
+                }
+            } else if (!coods[1][PAT_TYPE::L4A].empty() ||
+                       !coods[1][PAT_TYPE::L4B].empty()) {
+				//对面有成活4点
+				//冲，或者堵
+                for (auto m : coods[1][PAT_TYPE::L4A]) {
+                    ret.push_back(m);
+                }
+                for (auto m : coods[1][PAT_TYPE::L4B]) {
+                    ret.push_back(m);
+                }
+                for (auto m : coods[0][PAT_TYPE::S4]) {
+                    ret.push_back(m);
+                }
+            } 
+			if(ret.empty()){
+                for (int i = 13; i >= 0; --i) {//棋型优先
+                    for (int j = 1; j >= 0; --j) {//敌方优先
+                        for (auto m : coods[j][i]) {
+                            ret.push_back(m);
+                        }
+                    }	
+				}
+            }
+        } else {
+            std::sort(sorted.begin(), sorted.end(),
+                      [](auto a, auto b) { return a.second > b.second; });
+            for (auto &s : sorted) {
+                ret.push_back({s.first});
+            }
+		}
+        
         return ret;
     }
     // 评估函数 NegaEva
@@ -176,7 +277,8 @@ class GomokuBoard {
         if (doChain.size() == size * size) {
             return {0, true};
         }
-        int32_t val = 0;
+        int32_t val = 0, val2 = 0;
+ 
         // check 先手胜利 A为下一步先手 返回A的胜负
         auto check = [](const int(&A)[16], const int(&B)[16]) {
             // B已经赢了
@@ -192,17 +294,26 @@ class GomokuBoard {
                 return WON;
             }
 			// 到这里，A已经没5没4了
+			// B活四
+            if (B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B]) {
+                return -WON;
+            }
+            // B没有成5点
+            if (!B[PAT_TYPE::S4]) {
+                // A有成活四点就必胜了
+                if (A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B]) {
+                    return WON;
+                }
+            }
 			// A没有成4点（只能被动防守），则考虑B有杀
             if (!(A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B] || A[PAT_TYPE::S3])) {
                 // B必胜的情况
-                // B下一把有两个及以上成5点，堵不住
-                if (B[PAT_TYPE::L4A] + B[PAT_TYPE::L4B] + B[PAT_TYPE::S4] > 1) {
+                // B下一把有两个及以上成5点，大概率堵不住（待统计）
+                if (B[PAT_TYPE::S4] > 1) {
                     return -WON;
                 }
-                // B下一把有一个成5点（只能防守），同时又有成活4点 (现在有4+活3)
-                else if ((B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] ||
-                          B[PAT_TYPE::S4]) &&
-                         (B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B])) {
+                // B下一把有一个成5点（只能防守），同时又有成活4点
+                else if (B[PAT_TYPE::S4] && (B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B])) {
                     return -WON;
                 }
                 // B下一把有两个及以上成活四点 (双活三)
@@ -210,19 +321,13 @@ class GomokuBoard {
                     return -WON;
                 }
 			}
-            // B没有成4或成5点，则主动进攻
-            if (!(B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] || B[PAT_TYPE::S4] ||
-                  B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B] || B[PAT_TYPE::S3])) {
-                // A必胜的情况
-                // A成活四
-                if ( A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B]) {
-                    return WON;
-                }
-			}
+            
             return 0;
         };
+
         if (Turn() == BOARD_VAL::BLK) {  //黑先手
             val = check(pinfo.pattern_cnt_blk, pinfo.pattern_cnt_wht);
+            
         } else {
             val = -check(pinfo.pattern_cnt_wht, pinfo.pattern_cnt_blk);
         }
@@ -249,6 +354,14 @@ class GomokuBoard {
         auto [h, s, p, n] = board.GetPattern(i, j);
         return {pattern_type[h], pattern_type[s], 
                 pattern_type[p], pattern_type[n]};
+    }
+    //得到点附近的棋型（空点填充)
+    std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> 
+		GetPatternType(int i, int j, uint32_t v) const {
+        auto [h, s, p, n] = board.GetPattern(i, j);
+        return {pattern_type[h | (v << 10)], pattern_type[s | (v << 10)],
+                pattern_type[p | (v << 10)],
+                pattern_type[n | (v << 10)]};
     }
     std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> 
     GetPattern(int i, int j) const {
