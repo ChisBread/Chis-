@@ -33,27 +33,27 @@ struct statInfo {
 using MovWithVal = vector_type<std::pair<std::tuple<int, int>, int>>;
 class Solution {
    public:
-    virtual MovWithVal Search(const size_t MAX_DEPTH = 5, const MovWithVal &recommend = {}) = 0;
+    virtual MovWithVal Search(const size_t MAX_DEPTH = 5,
+                              const MovWithVal &recommend = {}) = 0;
     virtual void Do(int i, int j) = 0;
     virtual void Undo() = 0;
     virtual BOARD_VAL Get(int i, int j) const = 0;
     virtual void StopSearch() = 0;
     virtual void StartSearch() = 0;
     virtual bool IsStop() = 0;
-    virtual void Reset() = 0;
-    virtual ~Solution() {};
+    virtual void Reset(size_t MEM_BYTE = 128000000) = 0;
+    virtual ~Solution(){};
     statInfo stat;
 };
 template <typename Board>
 class solution : public Solution {
    public:
     solution(size_t MEM_BYTE = 128000000)
-        : TT_SIZE(MEM_BYTE / sizeof(ttInfo)),
-          TT(MEM_BYTE / sizeof(ttInfo)) {}
-  
+        : TT_SIZE(MEM_BYTE / sizeof(ttInfo)), TT(MEM_BYTE / sizeof(ttInfo)) {}
+
    public:  //以下方法都是线程不安全的，一个线程建议就搞一个实例
     virtual MovWithVal Search(const size_t MAX_DEPTH = 5,
-                      const MovWithVal &recommend = {}) {
+                              const MovWithVal &recommend = {}) {
         StartSearch();
         MovWithVal moves;
         for (auto mov : board.Moves()) {
@@ -81,7 +81,8 @@ class solution : public Solution {
             auto &bestMove = moves.front();
             {
                 auto [i, j] = bestMove.first;
-                cout << "DEBUG " << "最佳着法:" << i << " " << j << " " << bestMove.second
+                cout << "DEBUG "
+                     << "最佳着法:" << i << " " << j << " " << bestMove.second
                      << " " << depth << endl;
             }
             if (bestMove.second == WON || bestMove.second == -WON ||
@@ -91,10 +92,11 @@ class solution : public Solution {
         }
         return moves;
     }
+
    public:  //下面这些是线程安全的, 用来做超时控制，可以做到瞬间返回(截断)
-    virtual void Do(int i, int j) { board.Do(i, j); } 
+    virtual void Do(int i, int j) { board.Do(i, j); }
     virtual void Undo() { board.Undo(); }
-    virtual BOARD_VAL Get(int i, int j) const { return board.Get(i,j);}
+    virtual BOARD_VAL Get(int i, int j) const { return board.Get(i, j); }
     virtual void StopSearch() {
         std::lock_guard<std::mutex> lg(ABPtrMtx);
         AlphaBetaPtr = &solution<Board>::AlphaBetaEnd;
@@ -106,9 +108,11 @@ class solution : public Solution {
     virtual bool IsStop() {
         return AlphaBetaPtr == &solution<Board>::AlphaBetaEnd;
     }
-    virtual void Reset() {
+    virtual void Reset(size_t MEM_BYTE = 128000000) {
         board.Reset();
+        TT_SIZE = MEM_BYTE / sizeof(ttInfo), TT = vector_type<ttInfo>(TT_SIZE);
     }
+
    public:
     //带Alpha-Beta剪枝的Min-Max, 使用NegaMax简化形式
     //增加了置换表优化
@@ -244,12 +248,14 @@ class solution : public Solution {
     int AlphaBetaEnd(int alpha, int beta, int depth) {
         return AlphaBeta(alpha, beta, 0);  //跳到叶节点
     }
+
    public:
     Board board;
-    const size_t TT_SIZE;
+    size_t TT_SIZE;
     vector_type<ttInfo> TT;
     std::mutex ABPtrMtx;
-    int (solution<Board>::*AlphaBetaPtr)(int, int,int) = &solution<Board>::AlphaBeta;
+    int (solution<Board>::*AlphaBetaPtr)(int, int,
+                                         int) = &solution<Board>::AlphaBeta;
 };
 Solution *MakeSolution(size_t size, size_t MEM_BYTE = 128000000) {
     switch (size) {

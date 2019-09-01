@@ -3,7 +3,7 @@
 #include <ctime>
 #include <iostream>
 #include <string>
-#include "search/Solution.hpp"
+#include "search/solution.hpp"
 using namespace std;
 void show() {
     chis::Solution *slu = chis::MakeSolution(15);

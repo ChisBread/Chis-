@@ -3,6 +3,7 @@
 #include <array>
 #include <bitset>
 #include <cstdint>
+#include <exception>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -11,9 +12,8 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
-#include <exception>
 
-#define ABS(x) ((x)>=0?(x):-(x))
+#define ABS(x) ((x) >= 0 ? (x) : -(x))
 namespace chis {
 using std::cout;
 using std::endl;

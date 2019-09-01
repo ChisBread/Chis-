@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.1)
 PROJECT(Chis++)
 SET(CMAKE_CXX_STANDARD 17)
 #头文件目录
@@ -11,6 +11,10 @@ AUX_SOURCE_DIRECTORY(utils DIR_SRCS)
 #添加要编译的可执行文件
 ADD_EXECUTABLE(${PROJECT_NAME} ${DIR_SRCS} main.cpp) #chis本体
 ADD_EXECUTABLE(pbrain-${PROJECT_NAME} ${DIR_SRCS} gomocup/main.cpp) #chis本体
+#LINK
+SET(THREADS_PREFER_PTHREAD_FLAG ON)
+FIND_PACKAGE(Threads REQUIRED)
+TARGET_LINK_LIBRARIES(pbrain-${PROJECT_NAME} Threads::Threads)
 #环境相关
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")

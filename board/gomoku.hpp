@@ -76,10 +76,11 @@ class GomokuBoard {
         return *this;
     }
     void Reset() {
-        while(!doChain.empty()) {
+        while (!doChain.empty()) {
             Undo();
         }
     }
+
    public:
     // Hash
     uint64_t Hash() const { return zobrist.Hash(); }
@@ -89,14 +90,14 @@ class GomokuBoard {
             return {{size / 2, size / 2}};
         }
         vector_type<std::pair<std::tuple<int, int>, int>> sorted;
-        for(int i = 0; i < size; ++i) {
-            for(int j = 0; j < size; ++j) {
+        for (int i = 0; i < size; ++i) {
+            for (int j = 0; j < size; ++j) {
                 if (board.Get(i, j) == BOARD_VAL::EMP) {
                     int nb = 0;
                     for (int n = -NBRATE; n <= NBRATE; ++n) {
-                        if(n == 0) continue;
+                        if (n == 0) continue;
                         auto addnb = [&](int x, int y) {
-                            if(board.GetReal(x, y) != BOARD_VAL::EMP && 
+                            if (board.GetReal(x, y) != BOARD_VAL::EMP &&
                                 board.GetReal(x, y) != BOARD_VAL::INV) {
                                 nb += 1;
                             }
@@ -110,17 +111,16 @@ class GomokuBoard {
                         auto [nx, ny] = NA_NEXT(i + offset, j + offset, n);
                         addnb(nx, ny);
                     }
-                    if(nb) {
-                        sorted.push_back({{i,j}, nb});
+                    if (nb) {
+                        sorted.push_back({{i, j}, nb});
                     }
                 }
             }
         }
-        std::sort(sorted.begin(), sorted.end(), [](auto a, auto b) {
-            return a.second > b.second;
-        });
+        std::sort(sorted.begin(), sorted.end(),
+                  [](auto a, auto b) { return a.second > b.second; });
         vector_type<std::tuple<int, int>> ret;
-        for(auto &s:sorted) {
+        for (auto &s : sorted) {
             ret.push_back({s.first});
         }
         return ret;
@@ -129,10 +129,9 @@ class GomokuBoard {
     int32_t Evaluation() const {
         static const int evaluation[14] = {0,  1,   10,  12,  30,   35,   40,
                                            45, 100, 120, 230, 1000, 1000, WON};
-        int val = 0;        
+        int val = 0;
         for (int i = 1; i < 14; ++i) {
-            val +=
-                (pinfo.pattern_cnt_blk[i] * evaluation[i]);  //棋型间2倍差
+            val += (pinfo.pattern_cnt_blk[i] * evaluation[i]);  //棋型间2倍差
             val -= (pinfo.pattern_cnt_wht[i] * evaluation[i]);
         }
         return Turn() == BOARD_VAL::WHT ? -val : val;
@@ -143,23 +142,25 @@ class GomokuBoard {
             return {0, true};
         }
         int32_t val = 0;
-        //check 先手胜利 A为下一步先手
-        auto check = [](const int (&A)[16], const int (&B)[16]) {
-            if (A[PAT_TYPE::FIVE]) {//A已经赢了
+        // check 先手胜利 A为下一步先手
+        auto check = [](const int(&A)[16], const int(&B)[16]) {
+            if (A[PAT_TYPE::FIVE]) {  // A已经赢了
                 return WON;
-            } else if(B[PAT_TYPE::FIVE]) {//B已经赢了
+            } else if (B[PAT_TYPE::FIVE]) {  // B已经赢了
                 return -WON;
-            //A先手，有4直接赢
-            } 
-			//else if(A[PAT_TYPE::L4A] || A[PAT_TYPE::L4B] || A[PAT_TYPE::S4]) {
+                // A先手，有4直接赢
+            }
+            // else if(A[PAT_TYPE::L4A] || A[PAT_TYPE::L4B] || A[PAT_TYPE::S4])
+            // {
             //    return WON;
-            //A没有4 B有活4或双眠4(最糟糕的情况是 双眠4只有一个成5点)
-            //} else if(B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] || (B[PAT_TYPE::S4] > 1)) {
+            // A没有4 B有活4或双眠4(最糟糕的情况是 双眠4只有一个成5点)
+            //} else if(B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] || (B[PAT_TYPE::S4]
+            //> 1)) {
             //    return -WON;
             //}
             return 0;
         };
-        if(Turn() == BOARD_VAL::BLK) {//黑先手
+        if (Turn() == BOARD_VAL::BLK) {  //黑先手
             val = check(pinfo.pattern_cnt_blk, pinfo.pattern_cnt_wht);
         } else {
             val = -check(pinfo.pattern_cnt_wht, pinfo.pattern_cnt_blk);
