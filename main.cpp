@@ -22,6 +22,7 @@ void show() {
              << "胜利节点" << slu->stat.ending_cnt << endl
              << "置换表写入" << slu->stat.tt_record_cnt << endl
              << "置换表命中" << slu->stat.tt_hit_cnt << endl
+             << "节点置换(end)" << slu->stat.tt_ending_pass_cnt << endl
              << "节点置换(pv)" << slu->stat.tt_pv_pass_cnt << endl
              << "节点置换(alpha)" << slu->stat.tt_alpha_pass_cnt << endl
              << "节点置换(beta)" << slu->stat.tt_beta_pass_cnt << endl
