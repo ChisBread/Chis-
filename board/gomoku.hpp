@@ -188,24 +188,36 @@ class GomokuBoard {
                 return WON;
             }
 			// A先手，有4直接赢
-            // else if (A[PAT_TYPE::L4A] || A[PAT_TYPE::L4B] ) {
-            //     return WON;
-            // }
-			// //到这里，A已经没5没4了
-			// // A没有成4点（只能被动防守）
-            // if (!(A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B] || A[PAT_TYPE::S3])) {
-            //     // B下一把有两个及以上成4点，堵不住
-            //     if (B[PAT_TYPE::L4A] + B[PAT_TYPE::L4B] + B[PAT_TYPE::S4] > 1) {
-            //         return -WON;
-            //     }
-            //     // B下一把有一个成4点（只能防守），同时又有成活四点
-            //     else if ((B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] ||
-            //               B[PAT_TYPE::S4]) &&
-            //              (B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B])) {
-            //         return -WON;
-            //     }
-			// }
-            
+            else if (A[PAT_TYPE::L4A] || A[PAT_TYPE::L4B] || A[PAT_TYPE::S4]) {
+                return WON;
+            }
+			// 到这里，A已经没5没4了
+			// A没有成4点（只能被动防守），则考虑B有杀
+            if (!(A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B] || A[PAT_TYPE::S3])) {
+                // B必胜的情况
+                // B下一把有两个及以上成5点，堵不住
+                if (B[PAT_TYPE::L4A] + B[PAT_TYPE::L4B] + B[PAT_TYPE::S4] > 1) {
+                    return -WON;
+                }
+                // B下一把有一个成5点（只能防守），同时又有成活4点 (现在有4+活3)
+                else if ((B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] ||
+                          B[PAT_TYPE::S4]) &&
+                         (B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B])) {
+                    return -WON;
+                }
+                // B下一把有两个及以上成活四点 (双活三)
+                else if (B[PAT_TYPE::L3A] + B[PAT_TYPE::L3B] > 1) {
+                    return -WON;
+                }
+			}
+            // B没有成4点，则主动进攻
+            if (!(B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B] || B[PAT_TYPE::S3])) {
+                // A必胜的情况
+                // A成活四
+                if ( A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B]) {
+                    return WON;
+                }
+			}
             return 0;
         };
         if (Turn() == BOARD_VAL::BLK) {  //黑先手

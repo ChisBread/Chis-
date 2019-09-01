@@ -9,7 +9,7 @@ void show() {
     chis::Solution *slu = chis::MakeSolution(15);
     slu->Do(7, 7);slu->Do(1, 1);
     slu->Do(7, 8);slu->Do(13, 13);
-    //slu->Do(7, 6);slu->Do(7, 9);
+    slu->Do(7, 6);slu->Do(7, 9);
     //slu->Do(7, 5);
     // slu->Do(1, 13);
     //slu->Evaluation();
