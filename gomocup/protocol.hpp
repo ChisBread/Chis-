@@ -20,15 +20,23 @@ struct GomocupConfig {
 
     int MAX_DEPTH = 5;
 };
-
+inline std::string upperstr(const std::string &str) {
+    std::string ret = str;
+    std::transform(ret.begin(), ret.end(), ret.begin(), [](unsigned char c) { return std::toupper(c); });
+    return ret;
+}
+inline std::string lowerstr(const std::string &str) {
+    std::string ret = str;
+    std::transform(ret.begin(), ret.end(), ret.begin(), [](unsigned char c) { return std::tolower(c); });
+    return ret;
+}
 class stream_wrapper {
    public:
     stream_wrapper(std::istream &in, std::ostream &out)
         : inputer(in), outer(out) {}
     stream_wrapper &operator>>(std::string &str) {
         inputer >> str;
-        std::transform(str.begin(), str.end(), str.begin(),
-                       [](unsigned char c) { return std::toupper(c); });
+        str = upperstr(str);
         return *this;
     }
     template <typename T>
@@ -184,8 +192,8 @@ class GomocupProto {
     }
     int Info() {
         std::string key, val;
-        io >> key >> val;
-        io.Debug() << "accepted INFO" << key << ", " << val << endl;
+        std::cin >> key >> val;
+        key = lowerstr(key);
         if (key == "timeout_turn") {
             config.timeout_turn = atoi(val.c_str());
             io.Debug() << "accepted timeout_turn:" << config.timeout_turn << endl;

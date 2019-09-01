@@ -269,7 +269,7 @@ class solution : public Solution {
         return maxVal;
     }
     int AlphaBetaEnd(int alpha, int beta, int depth) {
-        return AlphaBeta(alpha, beta, 0);  //跳到叶节点
+        return alpha;  //跳到叶节点
     }
 
    public:
