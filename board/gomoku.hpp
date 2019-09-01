@@ -20,7 +20,6 @@ class GomokuBoard {
         int i;
         int j;
         BOARD_VAL v;
-        pattern_info pinfo;
     };
     class hash_func {
        public:
@@ -46,14 +45,13 @@ class GomokuBoard {
     //落子
     GomokuBoardType &Do(int i, int j) { return Do(i, j, Turn()); }
     GomokuBoardType &Do(int i, int j, const BOARD_VAL v) {
-        doChain.push_back(do_info{i, j, v, pinfo});
+        doChain.push_back(do_info{i, j, v});
         board.Set(i, j, v);    //棋盘变化
         zobrist.Set(i, j, v);  // hash变化
         return *this;
     }
     //撤销落子
     GomokuBoardType &Undo() {
-        pinfo = doChain.back().pinfo;                        //棋型回滚
         board.Set(doChain.back().i, doChain.back().j, EMP);  //棋盘置空
         zobrist.Set(doChain.back().i, doChain.back().j,
                     doChain.back().v);  // hash变化

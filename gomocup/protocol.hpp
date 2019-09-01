@@ -185,21 +185,30 @@ class GomocupProto {
     int Info() {
         std::string key, val;
         io >> key >> val;
+        io.Debug() << "accepted INFO" << key << ", " << val << endl;
         if (key == "timeout_turn") {
             config.timeout_turn = atoi(val.c_str());
+            io.Debug() << "accepted timeout_turn:" << config.timeout_turn << endl;
         } else if (key == "timeout_match") {
             config.timeout_match = atoi(val.c_str());
+            io.Debug() << "accepted timeout_match:" << config.timeout_match << endl;
         } else if (key == "max_memory") {
             config.max_memory = atoi(val.c_str());
+            io.Debug() << "accepted max_memory:" << config.max_memory << endl;
             Restart();//重设内存
+            io.Debug() << "mem reset" << endl;
         } else if (key == "time_left") {
             config.time_left = atoi(val.c_str());
+            io.Debug() << "accepted time_left:" << config.time_left << endl;
         } else if (key == "game_type") {
             config.game_type = atoi(val.c_str());
+            io.Debug() << "accepted game_type:" << config.game_type << endl;
         } else if (key == "rule") {
             config.rule = atoi(val.c_str());
+            io.Debug() << "accepted rule:" << config.rule << endl;
         } else if (key == "folder") {
             config.folder = val;
+            io.Debug() << "accepted folder:" << config.folder << endl;
         }
         return 0;
     }
@@ -292,7 +301,7 @@ class GomocupProto {
         }
         for (int i = 0; i < 14; ++i) {
             if (!cnts_blk[i] && !cnts_wht[i]) {
-                //continue;
+                continue;
             }
             io.Debug() << "POINT PATTERN " << "(" << x << "," << y << ")";
 			io << patternName[i];
