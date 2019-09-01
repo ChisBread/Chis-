@@ -5,16 +5,17 @@
 namespace chis {
 static const int WON = 999999999;
 static const int NBRATE = 2;
+struct pattern_info {
+    int pattern_cnt_blk[16] = {};
+    int pattern_cnt_wht[16] = {};
+};
 //五子棋棋盘-状态/Hash/...
 template <size_t size = 15, size_t offset = 5,
           typename BoardTy = GomokuArrayBoard<size, offset>>
 class GomokuBoard {
    public:
     using GomokuBoardType = GomokuBoard<size, offset>;
-    struct pattern_info {
-        int pattern_cnt_blk[16] = {};
-        int pattern_cnt_wht[16] = {};
-    };
+
     struct do_info {
         int i;
         int j;
@@ -75,6 +76,7 @@ class GomokuBoard {
         doChain.pop_back();
         return *this;
     }
+	pattern_info PatternInfo() { return pinfo;}
     void Reset() {
         while (!doChain.empty()) {
             Undo();
@@ -131,7 +133,7 @@ class GomokuBoard {
                                            45, 100, 120, 230, 1000, 1000, WON};
         int val = 0;
         for (int i = 1; i < 14; ++i) {
-            val += (pinfo.pattern_cnt_blk[i] * evaluation[i]);  //棋型间2倍差
+            val += (pinfo.pattern_cnt_blk[i] * evaluation[i]);
             val -= (pinfo.pattern_cnt_wht[i] * evaluation[i]);
         }
         return Turn() == BOARD_VAL::WHT ? -val : val;
@@ -141,22 +143,37 @@ class GomokuBoard {
             return {0, true};
         }
         int32_t val = 0;
-        // check 先手胜利 A为下一步先手
+        // check 先手胜利 A为下一步先手 返回A的胜负
         auto check = [](const int(&A)[16], const int(&B)[16]) {
-            if (A[PAT_TYPE::FIVE]) {  // A已经赢了
-                return WON;
-            } else if (B[PAT_TYPE::FIVE]) {  // B已经赢了
+            // B已经赢了
+            if (B[PAT_TYPE::FIVE]) {  
                 return -WON;
-                // A先手，有4直接赢
             }
-            // else if(A[PAT_TYPE::L4A] || A[PAT_TYPE::L4B] || A[PAT_TYPE::S4])
-            // {
-            //    return WON;
-            // A没有4 B有活4或双眠4(最糟糕的情况是 双眠4只有一个成5点)
-            //} else if(B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] || (B[PAT_TYPE::S4]
-            //> 1)) {
-            //    return -WON;
-            //}
+            // A已经赢了
+            else if (A[PAT_TYPE::FIVE]) {  
+                return WON;
+            }
+			// A先手，有4直接赢
+            else if (A[PAT_TYPE::L4A] || A[PAT_TYPE::L4B] ) {
+                return WON;
+            }
+			//到这里，A已经没5没4了
+			// A没有成4点（只能被动防守）
+            /*
+            if (!(A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B] || A[PAT_TYPE::S3])) {
+                // B下一把有两个及以上成4点，堵不住
+                if (B[PAT_TYPE::L4A] + B[PAT_TYPE::L4B] + B[PAT_TYPE::S4] > 1) {
+                    return -WON;
+                }
+                // B下一把有一个成4点（只能防守），同时又有成活四点
+                else if ((B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B] ||
+                          B[PAT_TYPE::S4]) &&
+                         (B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B])) {
+                    return -WON;
+                }
+			}
+                        */
+            
             return 0;
         };
         if (Turn() == BOARD_VAL::BLK) {  //黑先手

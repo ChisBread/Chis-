@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -100,8 +100,20 @@ class GomocupProto {
             slu->StartSearch();
         }
         auto rets = rets_future.get();
+        ShowStat();
         return rets.front().first;
     }
+    void Do(int x, int y) {
+        io.Debug() << "///////////BEFORE MOVE///////////" << std::endl;
+		ShowPointPattrtn(x, y);
+		slu->Do(x, y);
+        io.Debug() << "///////////AFTER MOVE"
+                   << "(" << x << "," << y
+                   << ")///////////"
+                   << std::endl;
+        ShowPointPattrtn(x, y);
+        ShowGlobalPattrtn();
+	}
    public:  //命令
     int Start() {
         if (slu) delete slu;
@@ -132,19 +144,20 @@ class GomocupProto {
         if (slu->Get(x, y) != chis::BOARD_VAL::EMP) {
             io.Error() << "InvalidMove:" << x << "," << y << std::endl;
         }
-        slu->Do(x, y);
+        Do(x, y);
         auto [i, j] = Search();
-        slu->Do(i, j);
+        Do(i, j);
         io << i << "," << j << std::endl;
         return 0;
     }
     int Begin() {
         auto [i, j] = Search();
-        slu->Do(i, j);
+        Do(i, j);
         io << i << "," << j << std::endl;
         return 0;
     }
     int Board() {
+        Restart();
         std::string line;
         while (getline(io.inputer, line)) {
             if (line.empty()) {
@@ -164,10 +177,10 @@ class GomocupProto {
                 io.Error() << "InvalidMove:" << x << "," << y << std::endl;
                 return -2;
             }
-            slu->Do(x, y);
+            Do(x, y);
         }
         auto [i, j] = Search();
-        slu->Do(i, j);
+        Do(i, j);
         io << i << "," << j << std::endl;
         return 0;
     }
@@ -228,7 +241,68 @@ class GomocupProto {
 
         return 0;
     }
-
+	int ShowStat() {
+        io.Debug() << "叶子节点" << slu->stat.leaf_cnt << std::endl;
+        io.Debug() << "胜利节点" << slu->stat.ending_cnt << std::endl;
+        io.Debug() << "置换表写入" << slu->stat.tt_record_cnt << std::endl;
+        io.Debug() << "置换表命中" << slu->stat.tt_hit_cnt << std::endl;
+        io.Debug() << "节点置换(end)" << slu->stat.tt_ending_pass_cnt
+                   << std::endl;
+        io.Debug() << "节点置换(pv)" << slu->stat.tt_pv_pass_cnt << std::endl;
+        io.Debug() << "节点置换(alpha)" << slu->stat.tt_alpha_pass_cnt
+                   << std::endl;
+        io.Debug() << "节点置换(beta)" << slu->stat.tt_beta_pass_cnt
+                   << std::endl;
+        io.Debug() << "最佳着法尝试" << slu->stat.bestmove_try_cnt << std::endl;
+        io.Debug() << "最佳着法剪枝" << slu->stat.bestmove_pass_cnt
+                   << std::endl;
+        io.Debug() << "主要变例搜索尝试" << slu->stat.pvs_try_cnt << std::endl;
+        io.Debug() << "主要变例搜索剪枝" << slu->stat.pvs_pass_cnt << std::endl;
+        io.Debug() << "总节点数" << slu->stat.node_cnt << std::endl;
+        slu->stat = statInfo{};
+        return 0;
+	}
+    int ShowGlobalPattrtn() {
+            static const std::string patternName[] = {
+                "死棋", "眠一",  "活一",  "眠二", "活二A", "活二B", "活二C",
+                "眠三", "活三A", "活三B", "眠四", "活四A", "活四B", "成五",
+            };
+            for (int i = 1; i < 14; ++i) {
+                if (!slu->PatternInfo().pattern_cnt_blk[i] &&
+                    !slu->PatternInfo().pattern_cnt_wht[i]) {
+                    continue;
+                }
+                io.Debug() << "GLOBAL PATTERN " << patternName[i];
+                io << " 黑:" << slu->PatternInfo().pattern_cnt_blk[i];
+                io << "白:" << slu->PatternInfo().pattern_cnt_wht[i] << std::endl;
+            }
+            return 0;
+    }
+    int ShowPointPattrtn(int x, int y) {
+        static const std::string patternName[] = {
+            "死棋", "眠一",  "活一",  "眠二", "活二A", "活二B", "活二C",
+            "眠三", "活三A", "活三B", "眠四", "活四A", "活四B", "成五",
+        };
+        int cnts_blk[16] = {}, cnts_wht[16] = {};
+        {  
+            uint8_t pats[4];
+            std::tie(pats[0], pats[1], pats[2], pats[3]) = slu->GetPatternType(x, y);
+            for (auto pat : pats) {
+                ++cnts_blk[pat & 0xf];
+                ++cnts_wht[pat >> 4];
+            }
+        }
+        for (int i = 1; i < 14; ++i) {
+            if (!cnts_blk[i] && !cnts_wht[i]) {
+                //continue;
+            }
+            io.Debug() << "POINT PATTERN " << "(" << x << "," << y << ")";
+			io << patternName[i];
+            io  << " 黑:" << cnts_blk[i];
+            io << "白:" << cnts_wht[i] << std::endl;
+        }
+        return 0;
+    }
    public:
     bool is_ending = false;
     stream_wrapper io;

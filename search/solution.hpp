@@ -45,6 +45,9 @@ class Solution {
     virtual void StartSearch() = 0;
     virtual bool IsStop() = 0;
     virtual void Reset(size_t MEM_BYTE = 128000000) = 0;
+    virtual pattern_info PatternInfo() = 0;
+    virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(int i,
+                                                                  int j) = 0;
     virtual ~Solution(){};
     statInfo stat;
 };
@@ -115,7 +118,11 @@ class solution : public Solution {
         board.Reset();
         TT_SIZE = MEM_BYTE / sizeof(ttInfo), TT = vector_type<ttInfo>(TT_SIZE);
     }
-
+    virtual pattern_info PatternInfo() { return board.PatternInfo(); }
+	virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(
+		int i, int j) {
+        return board.GetPatternType(i, j);
+	}
    public:
     //带Alpha-Beta剪枝的Min-Max, 使用NegaMax简化形式
     //增加了置换表优化
