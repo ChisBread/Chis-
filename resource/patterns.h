@@ -46,7 +46,7 @@ class GomokuPatterns {
         inited = true;
     }
     static set_type<uint32_t> &arrangement_padding(uint32_t size) {
-        static thread_local set_type<uint32_t> genres[12] = {
+        static set_type<uint32_t> genres[12] = {
             {0x0}, {0x3, 0x2, 0x1, 0x0}};
         if (genres[size].size()) {
             return genres[size];
@@ -156,7 +156,7 @@ class GomokuPatterns {
     uint8_t operator[](size_t i) const { return pattern_map[i]; }
 
    public:
-    static thread_local uint8_t pattern_map[1U << 22];
-    static thread_local bool inited;
+    static uint8_t pattern_map[1U << 22];
+    static bool inited;
 };
 }  // namespace chis

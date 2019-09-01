@@ -78,7 +78,30 @@ class GomocupProto {
         }
         return 0;
     }
-
+   public:
+    std::tuple<int, int> Search() {
+        //搜索 实现简单的超时控
+        auto rets_future = std::async(std::launch::async, [&]() {
+            return slu->Search(config.MAX_DEPTH);
+        });
+        std::future_status status;
+        do {
+            status = rets_future.wait_for(
+                std::chrono::milliseconds(config.timeout_turn));
+            if (status == std::future_status::deferred) {
+                io.Debug() << "Search Deferred" << std::endl;
+                slu->StopSearch();
+            } else if (status == std::future_status::timeout) {
+                io.Debug() << "Search Timeout" << std::endl;
+                slu->StopSearch();
+            }
+        } while (status != std::future_status::ready);
+        if (slu->IsStop()) {
+            slu->StartSearch();
+        }
+        auto rets = rets_future.get();
+        return rets.front().first;
+    }
    public:  //命令
     int Start() {
         if (slu) delete slu;
@@ -106,40 +129,17 @@ class GomocupProto {
             }
             break;
         }
-
         if (slu->Get(x, y) != chis::BOARD_VAL::EMP) {
             io.Error() << "InvalidMove:" << x << "," << y << std::endl;
         }
         slu->Do(x, y);
-        //搜索 实现一个简单的超时控制
-        auto rets_future = std::async(std::launch::async, [&]() {
-            return slu->Search(config.MAX_DEPTH);
-        });
-        std::future_status status;
-        do {
-            status = rets_future.wait_for(
-                std::chrono::milliseconds(config.timeout_turn));
-            if (status == std::future_status::deferred) {
-                io.Debug() << "Search Deferred" << std::endl;
-                slu->StopSearch();
-            } else if (status == std::future_status::timeout) {
-                io.Debug() << "Search Timeout" << std::endl;
-                slu->StopSearch();
-            }
-        } while (status != std::future_status::ready);
-        if (slu->IsStop()) {
-            slu->StartSearch();
-        }
-        auto rets = rets_future.get();
-        //搜索结束
-        auto [i, j] = rets.front().first;
+        auto [i, j] = Search();
         slu->Do(i, j);
         io << i << "," << j << std::endl;
         return 0;
     }
     int Begin() {
-        auto rets = slu->Search(config.MAX_DEPTH);
-        auto [i, j] = rets.front().first;
+        auto [i, j] = Search();
         slu->Do(i, j);
         io << i << "," << j << std::endl;
         return 0;
@@ -166,8 +166,7 @@ class GomocupProto {
             }
             slu->Do(x, y);
         }
-        auto rets = slu->Search(config.MAX_DEPTH);
-        auto [i, j] = rets.front().first;
+        auto [i, j] = Search();
         slu->Do(i, j);
         io << i << "," << j << std::endl;
         return 0;
