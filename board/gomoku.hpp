@@ -3,7 +3,7 @@
 #include "board/types.h"
 #include "resource/patterns.h"
 namespace chis {
-static const int WON = 999999999;
+static const int WON = 99999999;
 static const int NBRATE = 2;
 struct pattern_info {
     int pattern_cnt_blk[16] = {};
@@ -161,13 +161,17 @@ class GomokuBoard {
 
         auto me_pat = Turn() == BOARD_VAL::BLK ? pinfo.pattern_cnt_blk
                                                   : pinfo.pattern_cnt_wht;
+        
+        //TODO 增量点棋型
         if (!must && ((me_pat[PAT_TYPE::S4] || me_pat[PAT_TYPE::L4A] ||
                        me_pat[PAT_TYPE::L4B] || me_pat[PAT_TYPE::L3A] ||
-                       me_pat[PAT_TYPE::L3B]) ||
+                       me_pat[PAT_TYPE::L3B] || me_pat[PAT_TYPE::S3] || 
+                       me_pat[PAT_TYPE::L2A]+me_pat[PAT_TYPE::L2B]+me_pat[PAT_TYPE::L2C] > 1) ||
+                       //有4、有3、有两个活2
                       (enemy_pat[PAT_TYPE::S4] || enemy_pat[PAT_TYPE::L4A] ||
                        enemy_pat[PAT_TYPE::L4B] || enemy_pat[PAT_TYPE::L3A] ||
-                       enemy_pat[PAT_TYPE::L3B]))) {//是否必须生成全部着法，是否有
-            vector_type<std::tuple<int, int>> coods[2][14];
+                       enemy_pat[PAT_TYPE::L3B] || enemy_pat[PAT_TYPE::S3] || 
+                       enemy_pat[PAT_TYPE::L2A]+enemy_pat[PAT_TYPE::L2B]+enemy_pat[PAT_TYPE::L2C] > 1))) {
             for (auto &item : sorted) {
                 auto [x, y] = item.first;
                 uint8_t pats[4] = {};
@@ -205,59 +209,59 @@ class GomokuBoard {
                         me_pty = PAT_TYPE(pats[i]);
                     }
                 }
-
 				//优先级判断
+                //己方>敌方
+                //成5>活4>=44=43>33
                 if (me_info[PAT_TYPE::FIVE]) {
-                    return {{x, y}};//成五点直接返回就行
-				}
-                coods[enemy_pty > me_pty ? 1 : 0]
-                     [enemy_pty > me_pty ? enemy_pty : me_pty]
-                                         .push_back(item.first);
-
+                    return {{x, y}};
+				} else if(enemy_info[PAT_TYPE::FIVE]) { 
+                    item.second = WON+9;
+                //己方 活4或者44, 43
+                } else if(me_info[PAT_TYPE::L4A] || me_info[PAT_TYPE::L4B] || 
+                          me_info[PAT_TYPE::S4] > 1 || 
+                          (me_info[PAT_TYPE::S4] && 
+                          (me_info[PAT_TYPE::L3A] || me_info[PAT_TYPE::L3B]))) {
+                    item.second = WON+8;
+                //对方 活4或者44, 43
+                } else if(enemy_info[PAT_TYPE::L4A] || enemy_info[PAT_TYPE::L4B] || 
+                          enemy_info[PAT_TYPE::S4] > 1 || 
+                          (enemy_info[PAT_TYPE::S4] && 
+                          (enemy_info[PAT_TYPE::L3A] + enemy_info[PAT_TYPE::L3B]) )) {
+                    item.second = WON+7;
+                //己方 33
+                } else if(me_info[PAT_TYPE::L3A] + me_info[PAT_TYPE::L3B] > 1) {
+                    item.second = WON+6;
+                //对方 33
+                } else if(enemy_info[PAT_TYPE::L3A] + enemy_info[PAT_TYPE::L3B] > 1) {
+                    item.second = WON+5;
+                //己方 冲4
+                } else if(me_info[PAT_TYPE::S4]) {
+                    item.second = WON+4;
+                }
+                //val >= WON+8 | 不考虑冲4，以val截断
+                //val == WON+7 | 除了val,考虑冲4点 WON+4
             }
-            if (!coods[1][PAT_TYPE::FIVE].empty()) {
-				//对面有成5点
-                return coods[1][PAT_TYPE::FIVE];
-            } else if (!coods[0][PAT_TYPE::L4A].empty() ||
-                       !coods[0][PAT_TYPE::L4B].empty()) {
-				//自己有成活4点
-                for (auto m : coods[0][PAT_TYPE::L4A]) {
-                    ret.push_back(m);
+        }
+		std::sort(sorted.begin(), sorted.end(),
+                  [](auto a, auto b) { return a.second > b.second; });
+            //存在成5
+        if(sorted.front().second >= WON+8 ) {
+            return {sorted.front().first};
+        //
+        } else if(sorted.front().second == WON+7){
+            for (auto &s : sorted) {
+                if(s.second < WON+4 ) {
+                    break;
                 }
-                for (auto m : coods[0][PAT_TYPE::L4B]) {
-                    ret.push_back(m);
+                if(s.second == WON+7 || s.second == WON+4) {
+                    ret.push_back({s.first});
                 }
-            } else if (!coods[1][PAT_TYPE::L4A].empty() ||
-                       !coods[1][PAT_TYPE::L4B].empty()) {
-				//对面有成活4点
-				//冲，或者堵
-                for (auto m : coods[1][PAT_TYPE::L4A]) {
-                    ret.push_back(m);
-                }
-                for (auto m : coods[1][PAT_TYPE::L4B]) {
-                    ret.push_back(m);
-                }
-                for (auto m : coods[0][PAT_TYPE::S4]) {
-                    ret.push_back(m);
-                }
-            } 
-			if(ret.empty()){
-                for (int i = 13; i >= 0; --i) {//棋型优先
-                    for (int j = 1; j >= 0; --j) {//敌方优先
-                        for (auto m : coods[j][i]) {
-                            ret.push_back(m);
-                        }
-                    }	
-				}
             }
         } else {
-            std::sort(sorted.begin(), sorted.end(),
-                      [](auto a, auto b) { return a.second > b.second; });
             for (auto &s : sorted) {
                 ret.push_back({s.first});
             }
-		}
-        
+        }
         return ret;
     }
     // 评估函数 NegaEva
