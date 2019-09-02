@@ -127,9 +127,7 @@ class solution : public Solution {
     virtual void Reset(size_t MEM_BYTE = 128000000) {
         board.Reset();
         TT_SIZE = MEM_BYTE / sizeof(ttInfo);
-		{ 
-			vector_type<ttInfo>().swap(TT);
-		}    
+        { vector_type<ttInfo>().swap(TT); }
         TT = vector_type<ttInfo>(TT_SIZE);
     }
     virtual pattern_info PatternInfo() { return board.PatternInfo(); }

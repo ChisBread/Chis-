@@ -22,12 +22,14 @@ struct GomocupConfig {
 };
 inline std::string upperstr(const std::string &str) {
     std::string ret = str;
-    std::transform(ret.begin(), ret.end(), ret.begin(), [](unsigned char c) { return std::toupper(c); });
+    std::transform(ret.begin(), ret.end(), ret.begin(),
+                   [](unsigned char c) { return std::toupper(c); });
     return ret;
 }
 inline std::string lowerstr(const std::string &str) {
     std::string ret = str;
-    std::transform(ret.begin(), ret.end(), ret.begin(), [](unsigned char c) { return std::tolower(c); });
+    std::transform(ret.begin(), ret.end(), ret.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
     return ret;
 }
 class stream_wrapper {
@@ -86,6 +88,7 @@ class GomocupProto {
         }
         return 0;
     }
+
    public:
     std::tuple<int, int> Search() {
         //搜索 实现简单的超时控
@@ -112,14 +115,13 @@ class GomocupProto {
         return rets.front().first;
     }
     void Do(int x, int y) {
-		slu->Do(x, y);
+        slu->Do(x, y);
         io.Debug() << "///////////AFTER MOVE"
-                   << "(" << x << "," << y
-                   << ")///////////"
-                   << std::endl;
+                   << "(" << x << "," << y << ")///////////" << std::endl;
         ShowPointPattrtn(x, y);
         ShowGlobalPattrtn();
-	}
+    }
+
    public:  //命令
     int Start() {
         if (slu) delete slu;
@@ -196,15 +198,17 @@ class GomocupProto {
         key = lowerstr(key);
         if (key == "timeout_turn") {
             config.timeout_turn = atoi(val.c_str());
-            io.Debug() << "accepted timeout_turn:" << config.timeout_turn << endl;
+            io.Debug() << "accepted timeout_turn:" << config.timeout_turn
+                       << endl;
         } else if (key == "timeout_match") {
             config.timeout_match = atoi(val.c_str());
-            io.Debug() << "accepted timeout_match:" << config.timeout_match << endl;
+            io.Debug() << "accepted timeout_match:" << config.timeout_match
+                       << endl;
         } else if (key == "max_memory") {
             config.max_memory = atoi(val.c_str());
             io.Debug() << "accepted max_memory:" << config.max_memory << endl;
             auto dos = slu->GetDoChain();
-            Restart();//重设内存
+            Restart();  //重设内存
             slu->Do(dos);
             io.Debug() << "mem reset" << endl;
         } else if (key == "time_left") {
@@ -258,7 +262,7 @@ class GomocupProto {
 
         return 0;
     }
-	int ShowStat() {
+    int ShowStat() {
         io.Debug() << "叶子节点" << slu->stat.leaf_cnt << std::endl;
         io.Debug() << "胜利节点" << slu->stat.ending_cnt << std::endl;
         io.Debug() << "置换表写入" << slu->stat.tt_record_cnt << std::endl;
@@ -278,22 +282,22 @@ class GomocupProto {
         io.Debug() << "总节点数" << slu->stat.node_cnt << std::endl;
         slu->stat = statInfo{};
         return 0;
-	}
+    }
     int ShowGlobalPattrtn() {
-            static const std::string patternName[] = {
-                "死棋", "眠一",  "活一",  "眠二", "活二A", "活二B", "活二C",
-                "眠三", "活三A", "活三B", "眠四", "活四A", "活四B", "成五",
-            };
-            for (int i = 0; i < 14; ++i) {
-                if (!slu->PatternInfo().pattern_cnt_blk[i] &&
-                    !slu->PatternInfo().pattern_cnt_wht[i]) {
-                    continue;
-                }
-                io.Debug() << "GLOBAL PATTERN " << patternName[i];
-                io << " 黑:" << slu->PatternInfo().pattern_cnt_blk[i];
-                io << "白:" << slu->PatternInfo().pattern_cnt_wht[i] << std::endl;
+        static const std::string patternName[] = {
+            "死棋", "眠一",  "活一",  "眠二", "活二A", "活二B", "活二C",
+            "眠三", "活三A", "活三B", "眠四", "活四A", "活四B", "成五",
+        };
+        for (int i = 0; i < 14; ++i) {
+            if (!slu->PatternInfo().pattern_cnt_blk[i] &&
+                !slu->PatternInfo().pattern_cnt_wht[i]) {
+                continue;
             }
-            return 0;
+            io.Debug() << "GLOBAL PATTERN " << patternName[i];
+            io << " 黑:" << slu->PatternInfo().pattern_cnt_blk[i];
+            io << "白:" << slu->PatternInfo().pattern_cnt_wht[i] << std::endl;
+        }
+        return 0;
     }
     int ShowPointPattrtn(int x, int y) {
         static const std::string patternName[] = {
@@ -301,9 +305,10 @@ class GomocupProto {
             "眠三", "活三A", "活三B", "眠四", "活四A", "活四B", "成五",
         };
         int cnts_blk[16] = {}, cnts_wht[16] = {};
-        {  
+        {
             uint8_t pats[4];
-            std::tie(pats[0], pats[1], pats[2], pats[3]) = slu->GetPatternType(x, y);
+            std::tie(pats[0], pats[1], pats[2], pats[3]) =
+                slu->GetPatternType(x, y);
             for (auto pat : pats) {
                 ++cnts_blk[pat & 0xf];
                 ++cnts_wht[pat >> 4];
@@ -313,13 +318,15 @@ class GomocupProto {
             if (!cnts_blk[i] && !cnts_wht[i]) {
                 continue;
             }
-            io.Debug() << "POINT PATTERN " << "(" << x << "," << y << ")";
-			io << patternName[i];
-            io  << " 黑:" << cnts_blk[i];
+            io.Debug() << "POINT PATTERN "
+                       << "(" << x << "," << y << ")";
+            io << patternName[i];
+            io << " 黑:" << cnts_blk[i];
             io << "白:" << cnts_wht[i] << std::endl;
         }
         return 0;
     }
+
    public:
     bool is_ending = false;
     stream_wrapper io;

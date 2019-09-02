@@ -7,13 +7,16 @@
 using namespace std;
 void show() {
     chis::Solution *slu = chis::MakeSolution(15);
-    slu->Do(7, 7);slu->Do(1, 1);
-    slu->Do(7, 8);slu->Do(13, 13);
-    slu->Do(7, 6);slu->Do(7, 9);
-    //slu->Do(7, 5);
+    slu->Do(7, 7);
+    slu->Do(1, 1);
+    slu->Do(7, 8);
+    slu->Do(13, 13);
+    slu->Do(7, 6);
+    slu->Do(7, 9);
+    // slu->Do(7, 5);
     // slu->Do(1, 13);
-    //slu->Evaluation();
-    if(1){
+    // slu->Evaluation();
+    if (1) {
         auto ret = slu->Search();
         for (size_t i = 0; i < 3 && i < ret.size(); ++i) {
             auto [x, y] = ret[i].first;

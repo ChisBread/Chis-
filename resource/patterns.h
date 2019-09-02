@@ -46,8 +46,7 @@ class GomokuPatterns {
         inited = true;
     }
     static set_type<uint32_t> &arrangement_padding(uint32_t size) {
-        static set_type<uint32_t> genres[12] = {
-            {0x0}, {0x3, 0x2, 0x1, 0x0}};
+        static set_type<uint32_t> genres[12] = {{0x0}, {0x3, 0x2, 0x1, 0x0}};
         if (genres[size].size()) {
             return genres[size];
         }
@@ -95,7 +94,7 @@ class GomokuPatterns {
         }
         pat &= (uint32_t(1) << (22 - paddinglen * 2)) - 1;  //去掉左边界标志
         uint32_t rside = pat & 0xFU;
-        uint32_t lside = pat >> ((10-paddinglen)*2);
+        uint32_t lside = pat >> ((10 - paddinglen) * 2);
         vector_type<uint32_t> ret;
         //左右填充
         for (uint32_t i = 0; i <= paddinglen; ++i) {
@@ -112,13 +111,16 @@ class GomokuPatterns {
                     // 时，意味着左侧不填充
                     uint32_t lpaddingside = (l & 0x3U);
                     uint32_t rpaddingside = ((r >> (rightlen * 2 - 2)) & 0x3U);
-                    if (leftlen != 0 && !((lpaddingside == 0x3U || lpaddingside == 0x1U))) {
+                    if (leftlen != 0 &&
+                        !((lpaddingside == 0x3U || lpaddingside == 0x1U))) {
                         continue;
                     }
-                    if (rightlen != 0 && !((rpaddingside == 0x3U || rpaddingside == 0x1U))) {
+                    if (rightlen != 0 &&
+                        !((rpaddingside == 0x3U || rpaddingside == 0x1U))) {
                         continue;
                     }
-                    uint32_t ret_pat = pat << uint32_t(rightlen * 2);  //腾出右边空间
+                    uint32_t ret_pat =
+                        pat << uint32_t(rightlen * 2);  //腾出右边空间
                     ret_pat |= uint32_t(l) << uint32_t(22 - leftlen * 2);
                     ret_pat |= uint32_t(r);
                     ret.push_back(ret_pat);

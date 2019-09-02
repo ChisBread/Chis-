@@ -14,8 +14,8 @@ class GomokuArrayBoard {
     //绝对坐标
     void SetReal(int i, int j, const BOARD_VAL val) { board[i][j] = val; }
     BOARD_VAL GetReal(int i, int j) const { return board[i][j]; }
-    std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> 
-    GetPattern(int i, int j) const {
+    std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> GetPattern(int i,
+                                                                  int j) const {
         uint32_t hp = 0, sp = 0, pp = 0, np = 0;
         for (int n = -5; n < 6; ++n) {
             auto [hx, hy] = HENG_NEXT(i + offset, j + offset, n);
@@ -33,6 +33,7 @@ class GomokuArrayBoard {
         }
         return {hp, sp, pp, np};
     }
+
    public:
     GomokuArrayBoard() {
         for (int i = 0; i < size + offset * 2; ++i) {
