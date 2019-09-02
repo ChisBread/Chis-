@@ -4,10 +4,9 @@
 ## 获取Chis-Prime
 ```
 git clone https://github.com/ChisBread/Chis-Prime.git
-```
-## 获取依赖
-```
 git submodule update --init --recursive
+#环境安装
+#sudo apt-get install clang clang-format cmake
 ```
 ## 测试
 ```
@@ -15,16 +14,23 @@ mkdir build && cd build
 CC=/usr/local/bin/clang CXX=/usr/local/bin/clang++ cmake .. && make -j8
 ./TEST
 ```
-
+## 发布
+```
+1.下载[Visual Studio 2019](https://visualstudio.microsoft.com/)(这是最简单的方案),选择安装C++/CMake
+2.在Visual Studio 2019中打开"Chis-Prime", 选择"x64-release"生成pbrain-Chis++.exe
+3.在[piskvork](https://gomocup.org/download-gomocup-manager/)中选择pbrain-Chis++.exe
+4.做你想做的
+```
 # 附录
 ## 代码目录
-- test Chis-Prime 基础设施的测试
+- test Chis-Prime 基础设施的测试(搜索部分待完善)
 - thirdparty 依赖的第三方库
 - utils 通用类型与方法
 - board 棋盘操作、棋盘类型等
 - search 搜索算法
 - resource 生成包含原始棋型的C++代码
-## 关于patterns_by_wind23
+- gomocup gomocup协议实现
+## 关于patterns_by_wind23.txt
 [Tianyi Hao](https://github.com/wind23) 提供的棋型表，共有14种棋型
 ```
 XX_*X代表左边界,X_*XX代表右边界
