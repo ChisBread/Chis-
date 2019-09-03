@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "board/gomoku_arrayboard.hpp"
+#include "board/gomoku_bitboard.hpp"
 #include "board/types.h"
 #include "resource/patterns.h"
 namespace chis {
@@ -12,7 +12,7 @@ struct pattern_info {
 
 //五子棋棋盘-状态/Hash/...
 template <size_t size = 15, size_t offset = 5,
-          typename BoardTy = GomokuArrayBoard<size, offset>>
+          typename BoardTy = GomokuBitBoard<size, offset>>
 class GomokuBoard {
    public:
     using GomokuBoardType = GomokuBoard<size, offset>;
@@ -47,71 +47,63 @@ class GomokuBoard {
     GomokuBoardType &Do(int i, int j) { return Do(i, j, Turn()); }
     GomokuBoardType &Do(int i, int j, const BOARD_VAL v) {
         doChain.push_back(do_info{i, j, v});
+        //减去左右两边第一个棋子的同向棋型
+        {
+            auto pats = board.GetEmptyPointPattern(i, j);
+            for(int k = 0; k < 4; ++k) {
+                for(int l = 0; l < 2; ++l) {
+                    //减去黑子棋型
+                    if(((pats[i][k] >> 10)&0x3) == BOARD_VAL::BLK) {
+                        BOARD_VAL blk = pattern_type[pats[i][k]] & 0xf;
+                        --pinfo.pattern_cnt_blk[blk];
+                    //减去白字棋型
+                    } else if(((pats[i][k] >> 10)&0x3) == BOARD_VAL::WHT) {
+                        BOARD_VAL wht = pattern_type[pats[i][k]] >> 4;
+                        --pinfo.pattern_cnt_wht[wht];
+                    }
+                }
+            }
+        }
         board.Set(i, j, v);    //棋盘变化
         zobrist.Set(i, j, v);  // hash变化
+        uint32_t pats[4] = board.GetPattern(i,j);
+        //四向棋型
+        for(int k = 0; k < 4; ++k) {
+            //减去黑子棋型
+            if(v == BOARD_VAL::BLK) {
+                BOARD_VAL blk = pattern_type[pats[k]] & 0xf;
+                ++pinfo.pattern_cnt_blk[blk];
+            //减去白字棋型
+            } else if(v == BOARD_VAL::WHT) {
+                BOARD_VAL wht = pattern_type[pats[k]] >> 4;
+                ++pinfo.pattern_cnt_wht[wht];
+            }
+        }
+        {
+            auto pats = board.GetEmptyPointPattern(i, j);
+            for(int k = 0; k < 4; ++k) {
+                for(int l = 0; l < 2; ++l) {
+                    //减去黑子棋型
+                    if(((pats[i][k] >> 10)&0x3) == BOARD_VAL::BLK) {
+                        BOARD_VAL blk = pattern_type[pats[i][k]] & 0xf;
+                        ++pinfo.pattern_cnt_blk[blk];
+                    //减去白字棋型
+                    } else if(((pats[i][k] >> 10)&0x3) == BOARD_VAL::WHT) {
+                        BOARD_VAL wht = pattern_type[pats[i][k]] >> 4;
+                        ++pinfo.pattern_cnt_wht[wht];
+                    }
+                }
+            }
+        }
         return *this;
     }
     //撤销落子
     GomokuBoardType &Undo() {
-        board.Set(doChain.back().i, doChain.back().j, EMP);  //棋盘置空
+        board.Reset(doChain.back().i, doChain.back().j);  //棋盘置空
         zobrist.Set(doChain.back().i, doChain.back().j,
                     doChain.back().v);  // hash变化
         doChain.pop_back();
         return *this;
-    }
-    pattern_info PatternInfo() {
-        if (Hash() == pinfoSig) {
-            return pinfo;
-        }
-        pinfo = pattern_info{};  //清空
-        bool dedup[size + offset * 2][size + offset * 2][4] =
-            {};  //记录棋型中的有效值，出现过的不再遍历
-        for (auto &doItem : doChain) {
-            int x = doItem.i, y = doItem.j;
-            BOARD_VAL centerVal = board.Get(x, y);
-            uint32_t pats[4] = {};            // 4个方向的棋型
-            for (int fi = 0; fi < 4; ++fi) {  //横竖撇捺下标
-                if (dedup[x + offset][y + offset][fi]) {
-                    continue;
-                }
-                pats[fi] = centerVal << 10;    //初始点在中心
-                for (int n = 1; n < 6; ++n) {  // 1~5个偏移,正方向
-                    //得到偏移坐标
-                    auto [nx, ny] = Nexts[fi](x, y, n);
-                    uint32_t val = board.Get(nx, ny);  //对应的值
-                    //如果是边界
-                    if (val != BOARD_VAL::EMP && val != centerVal) {
-                        pats[fi] |= BOARD_VAL::INV
-                                    << (n + 5) * 2;  //偏移对应位数 12~20
-                        break;
-                    }
-                    dedup[nx + offset][ny + offset][fi] = true;
-                    pats[fi] |= val << (n + 5) * 2;  //偏移对应位数 12~20
-                }
-                for (int n = 1; n < 6; ++n) {  // 1~5个偏移,负方向
-                    //得到偏移坐标
-                    auto [nx, ny] = Nexts[fi](x, y, -n);
-                    uint32_t val = board.Get(nx, ny);  //对应的值
-                    //如果是边界
-                    if (val != BOARD_VAL::EMP && val != centerVal) {
-                        pats[fi] |= BOARD_VAL::INV
-                                    << (5 - n) * 2;  //偏移对应位数 8~0
-                        break;
-                    }
-                    dedup[nx + offset][ny + offset][fi] = true;
-                    pats[fi] |= val << (5 - n) * 2;  //偏移对应位数 8~0
-                }
-            }
-            for (auto pat : pats) {  //转化成具体类型存在返回值里
-                if (centerVal == BOARD_VAL::BLK) {
-                    ++pinfo.pattern_cnt_blk[pattern_type[pat] & 0xf];
-                } else {
-                    ++pinfo.pattern_cnt_wht[pattern_type[pat] >> 4];
-                }
-            }
-        }
-        pinfoSig = Hash();
-        return pinfo;
     }
     void Reset() {
         while (!doChain.empty()) {
@@ -124,7 +116,6 @@ class GomokuBoard {
     uint64_t Hash() const { return zobrist.Hash(); }
     // 着法生成
     vector_type<std::tuple<int, int>> Moves(bool must = false) {
-        PatternInfo();  // TODO 根据棋型剪枝
         if (doChain.empty()) {
             return {{size / 2, size / 2}};
         }
@@ -280,7 +271,6 @@ class GomokuBoard {
     int32_t Evaluation() {
         static const int evaluation[14] = {0,  1,   10,  12,  30,   35,   40,
                                            45, 100, 120, 230, 1000, 1000, WON};
-        PatternInfo();  //更新一下棋型
         int val = 0;
         for (int i = 1; i < 14; ++i) {
             val += (pinfo.pattern_cnt_blk[i] * evaluation[i]);
@@ -289,7 +279,6 @@ class GomokuBoard {
         return Turn() == BOARD_VAL::WHT ? -val : val;
     }
     std::tuple<int32_t, bool> Ending() {
-        PatternInfo();  //更新一下棋型
         if (doChain.size() == size * size) {
             return {0, true};
         }
