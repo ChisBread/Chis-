@@ -35,19 +35,6 @@ void show() {
              << "主要变例搜索尝试" << slu->stat.pvs_try_cnt << endl
              << "主要变例搜索剪枝" << slu->stat.pvs_pass_cnt << endl
              << "总节点数" << slu->stat.node_cnt << endl;
-        static const std::string patternName[] = {
-            "死棋", "眠一",  "活一",  "眠二", "活二A", "活二B", "活二C",
-            "眠三", "活三A", "活三B", "眠四", "活四A", "活四B", "成五",
-        };
-        for (int i = 0; i < 14; ++i) {
-            if (!slu->PatternInfo().pattern_cnt_blk[i] &&
-                !slu->PatternInfo().pattern_cnt_wht[i]) {
-                continue;
-            }
-            cout << "GLOBAL PATTERN " << patternName[i];
-            cout << " 黑:" << slu->PatternInfo().pattern_cnt_blk[i];
-            cout << "白:" << slu->PatternInfo().pattern_cnt_wht[i] << std::endl;
-        }
     }
 }
 int main() {

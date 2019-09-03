@@ -48,53 +48,8 @@ class GomokuBoard {
     GomokuBoardType &Do(int i, int j, const BOARD_VAL v) {
         doChain.push_back(do_info{i, j, v});
         //减去左右两边第一个棋子的同向棋型
-        {
-            auto pats = board.GetEmptyPointPattern(i, j);
-            for(int k = 0; k < 4; ++k) {
-                for(int l = 0; l < 2; ++l) {
-                    //减去黑子棋型
-                    if(((pats[i][k] >> 10)&0x3) == BOARD_VAL::BLK) {
-                        BOARD_VAL blk = pattern_type[pats[i][k]] & 0xf;
-                        --pinfo.pattern_cnt_blk[blk];
-                    //减去白字棋型
-                    } else if(((pats[i][k] >> 10)&0x3) == BOARD_VAL::WHT) {
-                        BOARD_VAL wht = pattern_type[pats[i][k]] >> 4;
-                        --pinfo.pattern_cnt_wht[wht];
-                    }
-                }
-            }
-        }
         board.Set(i, j, v);    //棋盘变化
         zobrist.Set(i, j, v);  // hash变化
-        uint32_t pats[4] = board.GetPattern(i,j);
-        //四向棋型
-        for(int k = 0; k < 4; ++k) {
-            //减去黑子棋型
-            if(v == BOARD_VAL::BLK) {
-                BOARD_VAL blk = pattern_type[pats[k]] & 0xf;
-                ++pinfo.pattern_cnt_blk[blk];
-            //减去白字棋型
-            } else if(v == BOARD_VAL::WHT) {
-                BOARD_VAL wht = pattern_type[pats[k]] >> 4;
-                ++pinfo.pattern_cnt_wht[wht];
-            }
-        }
-        {
-            auto pats = board.GetEmptyPointPattern(i, j);
-            for(int k = 0; k < 4; ++k) {
-                for(int l = 0; l < 2; ++l) {
-                    //减去黑子棋型
-                    if(((pats[i][k] >> 10)&0x3) == BOARD_VAL::BLK) {
-                        BOARD_VAL blk = pattern_type[pats[i][k]] & 0xf;
-                        ++pinfo.pattern_cnt_blk[blk];
-                    //减去白字棋型
-                    } else if(((pats[i][k] >> 10)&0x3) == BOARD_VAL::WHT) {
-                        BOARD_VAL wht = pattern_type[pats[i][k]] >> 4;
-                        ++pinfo.pattern_cnt_wht[wht];
-                    }
-                }
-            }
-        }
         return *this;
     }
     //撤销落子

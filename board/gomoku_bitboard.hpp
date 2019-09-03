@@ -10,7 +10,7 @@ class GomokuBitBoard {
    public:  // required method
     //相对坐标
     void Set(int i, int j, const BOARD_VAL val) {
-        SetReal(i+offset, j+offset);
+        SetReal(i+offset, j+offset, val);
     }
     void Reset(int i, int j) {
         ResetReal(i, j);
@@ -80,7 +80,7 @@ class GomokuBitBoard {
                    j < offset || j >=size+offset ) {
                     SetReal(i, j, BOARD_VAL::INV);
                 } else {
-                    SetReal(i, j, BOARD_VAL::EMP);
+                    ResetReal(i, j);
                 }
             }
         }

@@ -53,7 +53,6 @@ class Solution {
     virtual void StartSearch() = 0;
     virtual bool IsStop() = 0;
     virtual void Reset(size_t MEM_BYTE = 128000000) = 0;
-    virtual pattern_info PatternInfo() = 0;
     virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(
         int i, int j) = 0;
     virtual std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> GetPattern(
@@ -130,7 +129,6 @@ class solution : public Solution {
         { vector_type<ttInfo>().swap(TT); }
         TT = vector_type<ttInfo>(TT_SIZE);
     }
-    virtual pattern_info PatternInfo() { return board.PatternInfo(); }
     virtual MovsTy GetDoChain() const {
         MovsTy ret;
         for (auto d : board.doChain) {
