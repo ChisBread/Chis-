@@ -45,10 +45,6 @@ template <size_t size = 15, size_t offset = 5>
 class GomokuMoves {
 public:
     GomokuMoves() {
-        col_node *col_prior = nullptr;
-        row_node *row_prior = nullptr;
-        mapping_node *mapping_prior = nullptr;
-        pattern_node *pattern_prior = nullptr;
         for(int v = -1; v < 2; v+=2) {
             root_node &root = roots[v];
             root.val = v;
@@ -56,13 +52,11 @@ public:
                 pattern_node &pattern = pattern_pool[v][p];
                 pattern.pty = p;//值
                 pattern.parent = &root;//父节点
-                pattern.prior = pattern_prior;//前驱
                 pattern_prior = &pattern;
                 for(int k = 0; k < 4; ++k) {
                     mapping_node &mapping = mapping_pool[v][p][k];
                     mapping.k = k;//值
                     mapping.parent = &pattern;//父节点
-                    mapping.prior = mapping_prior;//前驱
                     mapping_prior = &mapping;
                     for(int i = 0; i < size; ++i) {
                         for(int j = 0; j < size; ++j) {
@@ -72,14 +66,12 @@ public:
                             row.x = x;//值
                             row.parent = &mapping;//父节点
                             if(row_prior != &row) {
-                                row.prior = row_prior;//前驱
                                 row_prior = &row;
                             }
                             col_node &col = col_pool[v][p][k][x][y];
                             col.y = y;//值
                             col.move = {i, j};//着法
                             col.parent = &row;//父节点
-                            col.prior = col_prior;//前驱
                             col_prior = &col;
                         }
                     }
@@ -97,7 +89,8 @@ public:
         auto[x,y] = Mappings[k](i+offfset, j+offset);
         row_node &row = row_pool[v][pty][k][x];
         col_node &col = col_pool[v][p][k][x][y];
-        //TODO 插入连锁
+        col.prior = col.next = nullptr;
+        //插入链表
     }
     //删除点 
     void Delete(BOARD_VAL val, PAT_TYPE pty, int k,std::tuple<int,int> move) {
