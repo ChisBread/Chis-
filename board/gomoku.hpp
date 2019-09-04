@@ -4,23 +4,28 @@
 #include "resource/patterns.h"
 namespace chis {
 static const int WON = 99999999;
-static const int NBRATE = 2;
 struct pattern_info {
-    int pattern_cnt_blk[16] = {};
-    int pattern_cnt_wht[16] = {};
+    //单一棋型应该不会超过127
+    int8_t pattern_cnt_blk[16] = {};
+    int8_t pattern_cnt_wht[16] = {};
 };
-
 //五子棋棋盘-状态/Hash/...
 template <size_t size = 15, size_t offset = 5,
           typename BoardTy = GomokuBitBoard<size, offset>>
 class GomokuBoard {
    public:
     using GomokuBoardType = GomokuBoard<size, offset>;
-
+    struct moves_info {
+        //相邻点不会超过127
+        int8_t nbrate[size+offset*2][size+offset*2][6] = {};
+        bool pattern_center[size+offset*2][size+offset*2] = {};
+    };
     struct do_info {
         int i;
         int j;
         BOARD_VAL v;
+        pattern_info p;
+        moves_info m;
     };
     class hash_func {
        public:
@@ -46,14 +51,81 @@ class GomokuBoard {
     //落子
     GomokuBoardType &Do(int i, int j) { return Do(i, j, Turn()); }
     GomokuBoardType &Do(int i, int j, const BOARD_VAL v) {
-        doChain.push_back(do_info{i, j, v});
-        //减去左右两边第一个棋子的同向棋型
+        doChain.push_back(do_info{i, j, v, pinfo, minfo});//TODO 优化一下，不粗暴维护
+        vector_type<std::tuple<int,int,int>> need_update_pattern;
+        {//增量维护
+            //得到棋型
+            uint32_t pats[4] = {};
+            std::tie(pats[0], pats[1], pats[2], pats[3]) = GetPattern(i, j);
+            minfo.pattern_center[i+offset][j+offset] = true;//选为棋型中心
+            for(int k = 0; k < 4; ++k) {//横竖撇捺4线
+                if(v == BOARD_VAL::BLK) {//棋型增加
+                    ++pinfo.pattern_cnt_blk[pattern_type[pats[k]|(v << 10)] & 0xF];
+                } else {
+                    ++pinfo.pattern_cnt_wht[pattern_type[pats[k]] >> 4];
+                }
+                for(int neg = -1; neg < 2; neg += 2) {//每条线2个偏移方向
+                    bool flag  = true;//是否有效范围
+                    for(int l = 1; l < 6; ++l) {
+                        int mv = neg == -1?-l:l;
+                        BOARD_VAL side = BOARD_VAL((pats[k] >> (5+mv)*2)&0x3U);//两个方向
+                        auto[xn, yn] = Nexts[k](i,j,mv);//偏移
+                        if(flag) {
+                            ++minfo.nbrate[xn+offset][yn+offset][l];//xn,yn距离为l的棋子+1
+                        }
+                        if(side != BOARD_VAL::EMP) {//遇到非空且不等于将落子颜色的棋子
+                            //非空点，检查是否为某一棋型的中心
+                            if(minfo.pattern_center[xn+offset][yn+offset]) {
+                                uint32_t pat = GetPattern(xn, yn, k);//得到旧的棋型中心的棋型
+                                BOARD_VAL val = BOARD_VAL((pat >> 10)&0x3U);//得到颜色
+                                if(val == v) {//同色点
+                                    if(flag) {//如果在有效棋型范围内
+                                        //同色子的棋型取消中心位置//不需要补上新值
+                                        minfo.pattern_center[xn+offset][yn+offset] = false;//取消影响范围内的棋型中心
+                                        if(val == BOARD_VAL::BLK) {
+                                            --pinfo.pattern_cnt_blk[pattern_type[pat] & 0xF];//减去对应的旧值
+                                        } else {
+                                            --pinfo.pattern_cnt_wht[pattern_type[pat] >> 4];//减去对应的旧值
+                                        }
+                                    }
+                                } else {//异色点，更新
+                                    if(val == BOARD_VAL::BLK) {
+                                        --pinfo.pattern_cnt_blk[pattern_type[pat] & 0xF];//减去对应的旧值
+                                    } else {
+                                        --pinfo.pattern_cnt_wht[pattern_type[pat] >> 4];//减去对应的旧值
+                                    }
+                                    need_update_pattern.push_back({xn, yn, k});
+                                }
+                            }
+                            if(side != v) {
+                                //这个方向的遍历结束，往后的点对nbrate不会有影响
+                                flag = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         board.Set(i, j, v);    //棋盘变化
         zobrist.Set(i, j, v);  // hash变化
+        {
+            for(auto[i,j,k]:need_update_pattern) {//需要更新的pattern_center
+                uint32_t pat = GetPattern(i, j, k);
+                BOARD_VAL val = BOARD_VAL((pat >> 10)&0x3U);
+                if(val == BOARD_VAL::BLK) {
+                    ++pinfo.pattern_cnt_blk[pattern_type[pat] & 0xF];
+                } else {
+                    ++pinfo.pattern_cnt_wht[pattern_type[pat] >> 4];
+                }
+            }
+        }
         return *this;
     }
     //撤销落子
     GomokuBoardType &Undo() {
+        
+        pinfo = doChain.back().p;
+        minfo = doChain.back().m;
         board.Reset(doChain.back().i, doChain.back().j);  //棋盘置空
         zobrist.Set(doChain.back().i, doChain.back().j,
                     doChain.back().v);  // hash变化
@@ -77,36 +149,16 @@ class GomokuBoard {
         vector_type<std::pair<std::tuple<int, int>, int>> sorted;
         for (int i = 0; i < size; ++i) {
             for (int j = 0; j < size; ++j) {
-                if (board.Get(i, j) == BOARD_VAL::EMP) {
-                    int nb = 0;
-                    for (int n = -NBRATE; n <= NBRATE; ++n) {
-                        if (n == 0) continue;
-                        auto addnb = [&](int x, int y) {
-                            if (board.GetReal(x, y) != BOARD_VAL::EMP &&
-                                board.GetReal(x, y) != BOARD_VAL::INV) {
-                                nb += 1;
-                            }
-                        };
-                        auto [hx, hy] = HENG_NEXT(i + offset, j + offset, n);
-                        addnb(hx, hy);
-                        auto [sx, sy] = SHU_NEXT(i + offset, j + offset, n);
-                        addnb(sx, sy);
-                        auto [px, py] = PIE_NEXT(i + offset, j + offset, n);
-                        addnb(px, py);
-                        auto [nx, ny] = NA_NEXT(i + offset, j + offset, n);
-                        addnb(nx, ny);
-                    }
-                    if (nb) {
-                        sorted.push_back({{i, j}, nb});
-                    }
+                if (board.Get(i, j) == BOARD_VAL::EMP && 
+                (minfo.nbrate[i+offset][j+offset][1] || 
+                 minfo.nbrate[i+offset][j+offset][2] )) {//选择附近至少有一个距离小于2的点的着法
+                     sorted.push_back({{i,j}, minfo.nbrate[i+offset][j+offset][1]+minfo.nbrate[i+offset][j+offset][2]});
                 }
             }
         }
 
-        vector_type<std::tuple<int, int>> ret;
         auto enemy_pat = Turn() == BOARD_VAL::BLK ? pinfo.pattern_cnt_wht
                                                   : pinfo.pattern_cnt_blk;
-
         auto me_pat = Turn() == BOARD_VAL::BLK ? pinfo.pattern_cnt_blk
                                                : pinfo.pattern_cnt_wht;
 
@@ -202,10 +254,10 @@ class GomokuBoard {
         }
         std::sort(sorted.begin(), sorted.end(),
                   [](auto a, auto b) { return a.second > b.second; });
+        vector_type<std::tuple<int, int>> ret;
         //存在成5
         if (sorted.front().second >= WON + 8) {
             return {sorted.front().first};
-            //
         } else if (sorted.front().second == WON + 7) {
             for (auto &s : sorted) {
                 if (s.second < WON + 4) {
@@ -234,13 +286,13 @@ class GomokuBoard {
         return Turn() == BOARD_VAL::WHT ? -val : val;
     }
     std::tuple<int32_t, bool> Ending() {
+        
         if (doChain.size() == size * size) {
             return {0, true};
         }
         int32_t val = 0, val2 = 0;
-
         // check 先手胜利 A为下一步先手 返回A的胜负
-        auto check = [](const int(&A)[16], const int(&B)[16]) {
+        auto check = [this](const int8_t(&A)[16], const int8_t(&B)[16]) {
             // B已经赢了
             if (B[PAT_TYPE::FIVE]) {
                 return -WON;
@@ -288,7 +340,6 @@ class GomokuBoard {
 
         if (Turn() == BOARD_VAL::BLK) {  //黑先手
             val = check(pinfo.pattern_cnt_blk, pinfo.pattern_cnt_wht);
-
         } else {
             val = -check(pinfo.pattern_cnt_wht, pinfo.pattern_cnt_blk);
         }
@@ -306,6 +357,9 @@ class GomokuBoard {
             val += evaluation[pat >> 4];
         }
         return val;
+    }
+    pattern_info PatternInfo() const {
+        return pinfo;
     }
     //取值
     BOARD_VAL Get(int i, int j) const { return board.Get(i, j); }
@@ -328,19 +382,22 @@ class GomokuBoard {
         return board.GetPattern(i, j);
     }
 
+    uint32_t GetPattern(int i,int j, int k) const {
+        return board.GetPattern(i, j, k);
+    }
    public:
     GomokuBoard() {}
 
    public:
     // status
     vector_type<do_info> doChain;
+    moves_info minfo;
     BoardTy board;  //棋盘
     // hashing
     ZobristHash<size, 4> zobrist;
     // pattern
     GomokuPatterns pattern_type;
     pattern_info pinfo;
-    uint64_t pinfoSig;
 };
 template <typename BTy, typename VTy>
 using GomokuBoardMap = std::unordered_map<BTy, VTy, typename BTy::hash_func,

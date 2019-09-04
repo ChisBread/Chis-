@@ -13,7 +13,7 @@ class GomokuBitBoard {
         SetReal(i+offset, j+offset, val);
     }
     void Reset(int i, int j) {
-        ResetReal(i, j);
+        ResetReal(i+offset, j+offset);
     }
     BOARD_VAL Get(int i, int j) const { 
         return GetReal(i+offset, j+offset);
@@ -24,6 +24,7 @@ class GomokuBitBoard {
             auto[x, y] = Mappings[k](i, j, size+offset*2);
             board[k][x] &= ~(bitline_t(0x3U) << y*2);//mask
             board[k][x] |= val << y*2;
+            
         }
     }
     void ResetReal(int i, int j) { 
