@@ -2,7 +2,7 @@
 #include "board/iterator.hpp"
 #include "board/types.h"
 namespace chis {
-//五子棋位棋盘-基本操作
+//五子棋数组棋盘-基本操作
 template <size_t size = 15, size_t offset = 5>
 class GomokuArrayBoard {
    public:  // required method

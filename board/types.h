@@ -3,18 +3,18 @@
 #include "utils/zobrist_hash.hpp"
 namespace chis {
 //棋盘值类型
-enum BOARD_VAL : uint32_t {  //一些值
+enum BOARD_VAL : uint64_t {  //一些值
     EMP = 0b00,              //空
     WHT = 0b01,              //白
     BLK = 0b10,              //黑
     INV = 0b11,              //无效点
 };
-
+using PattternsTuple = std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> ;
 //棋盘赋值中间类型 b[][]
 template <typename _board_t>
 class assign_tmp {
    public:
-    _board_t &operator=(const uint8_t &v) { return b.Do(i, j, BOARD_VAL(v)); }
+    _board_t &operator=(BOARD_VAL v) { return b.Do(i, j, BOARD_VAL(v)); }
 
    public:
     _board_t &b;

@@ -10,9 +10,10 @@ void show() {
     slu->Do(7, 7);
     slu->Do(1, 1);
     slu->Do(7, 8);
-    slu->Do(13, 13);
-    slu->Do(7, 6);
+    slu->Do(2, 2);
     slu->Do(7, 9);
+    slu->Do(7, 6);
+    // slu->Do(7, 9);
     // slu->Do(7, 5);
     // slu->Do(1, 13);
     // slu->Evaluation();
@@ -45,8 +46,8 @@ void show() {
                 continue;
             }
             cout << "GLOBAL PATTERN " << patternName[i];
-            cout << " 黑:" << slu->PatternInfo().pattern_cnt_blk[i];
-            cout << "白:" << slu->PatternInfo().pattern_cnt_wht[i] << std::endl;
+            cout << " 黑:" << int(slu->PatternInfo().pattern_cnt_blk[i]);
+            cout << "白:" << int(slu->PatternInfo().pattern_cnt_wht[i]) << std::endl;
         }
     }
 }

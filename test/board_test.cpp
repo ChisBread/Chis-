@@ -2,48 +2,11 @@
 #include <set>
 #include <string>
 #include "board/gomoku.hpp"
-#include "board/mappings.hpp"
 #include "gtest/gtest.h"
 #include "resource/patterns.h"
 using namespace std;
 const static size_t SIZE = 15;
 const static size_t OFFSET = 5;
-TEST(TESTBoard, Mappings) {
-    //初始化Mappings
-    int board[SIZE * 2][SIZE * 2] = {};
-    for (int i = 0; i < SIZE; ++i) {
-        for (int j = 0; j < SIZE; ++j) {
-            board[i * 2][j * 2] = chis::HENG(i, j, SIZE);
-            board[i * 2][j * 2 + 1] = chis::SHU(i, j, SIZE);
-            board[i * 2 + 1][j * 2] = chis::PIE(i, j, SIZE);
-            board[i * 2 + 1][j * 2 + 1] = chis::NA(i, j, SIZE);
-        }
-    }
-    // Mapping 坐标映射功能测试
-    for (int i = 0; i < SIZE; ++i) {
-        for (int j = 0; j < SIZE; ++j) {
-            if (j > 0) {
-                // HENG坐标连续性测试 //HENG → j-1
-                EXPECT_EQ(board[i * 2][j * 2], board[i * 2][(j - 1) * 2] + 1);
-            }
-            if (i > 0) {
-                // SHU坐标连续性测试 //SHU ↓  i-1
-                EXPECT_EQ(board[i * 2][j * 2 + 1],
-                          board[(i - 1) * 2][j * 2 + 1] + 1);
-            }
-            if (j > 0 && i < SIZE - 1) {
-                // PIE坐标连续性测试 //PIE ↗  i+1 j-1
-                EXPECT_EQ(board[i * 2 + 1][j * 2],
-                          board[(i + 1) * 2 + 1][(j - 1) * 2] + 1);
-            }
-            if (j > 0 && i > 0) {
-                // NA坐标连续性测试 //NA ↘   i-1 j-1
-                EXPECT_EQ(board[i * 2 + 1][j * 2 + 1],
-                          board[(i - 1) * 2 + 1][(j - 1) * 2 + 1] + 1);
-            }
-        }
-    }
-}
 TEST(TESTBoard, BoardBase) {
     //初始化
     srand(time(NULL));
@@ -101,17 +64,17 @@ TEST(TESTBoard, BoardPattern) {
     check_pattern_type(2);
     {  //眠一
         board[7][8] = chis::BOARD_VAL::WHT;
-        check_pattern(0b0000000000100100000000);
+        check_pattern(0b0000000001100000000000);
         check_pattern_type(1);
         board.Undo();
     }
     //活二
     board[7][8] = chis::BOARD_VAL::BLK;
-    check_pattern(0b0000000000101000000000);
+    check_pattern(0b0000000010100000000000);
     check_pattern_type(6);
     {  //眠二
         board[7][6] = chis::BOARD_VAL::WHT;
-        check_pattern(0b0000000001101000000000);
+        check_pattern(0b0000000010100100000000);
         check_pattern_type(3);
         board.Undo();
     }
@@ -121,17 +84,17 @@ TEST(TESTBoard, BoardPattern) {
     check_pattern_type(9);
     {  //眠三
         board[7][5] = chis::BOARD_VAL::WHT;
-        check_pattern(0b0000000110101000000000);
+        check_pattern(0b0000000010101001000000);
         check_pattern_type(7);
         board.Undo();
     }
     //活四
     board[7][5] = chis::BOARD_VAL::BLK;
-    check_pattern(0b0000001010101000000000);
+    check_pattern(0b0000000010101010000000);
     check_pattern_type(12);
     {  //眠四
         board[7][9] = chis::BOARD_VAL::WHT;
-        check_pattern(0b0000001010101001000000);
+        check_pattern(0b0000000110101010000000);
         check_pattern_type(10);
         board.Undo();
     }

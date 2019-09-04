@@ -12,7 +12,7 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
-
+#include <list>
 #define ABS(x) ((x) >= 0 ? (x) : -(x))
 namespace chis {
 using std::cout;
@@ -22,9 +22,9 @@ using vector_type = std::vector<T>;
 template <typename T, size_t size>
 using array_type = std::array<T, size>;
 template <typename T>
-using set_type = std::set<T>;
+using list_type = std::list<T>;
 template <typename T>
-using unique_ptr_type = std::unique_ptr<T>;
+using set_type = std::set<T>;
 template <size_t num>
 using bitset_type = std::bitset<num>;
 // rand64
