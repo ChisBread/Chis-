@@ -295,9 +295,10 @@ class GomocupProto {
                 !slu->PatternInfo().pattern_cnt_wht[i]) {
                 continue;
             }
-            cout << "GLOBAL PATTERN " << patternName[i];
-            cout << " 黑:" << int(slu->PatternInfo().pattern_cnt_blk[i]);
-            cout << "白:" << int(slu->PatternInfo().pattern_cnt_wht[i]) << std::endl;
+            io.Debug() << "GLOBAL PATTERN " << patternName[i];
+            io.Debug() << " 黑:" << int(slu->PatternInfo().pattern_cnt_blk[i]);
+            io.Debug() << "白:" << int(slu->PatternInfo().pattern_cnt_wht[i])
+                       << std::endl;
         }
         return 0;
     }
