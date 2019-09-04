@@ -7,19 +7,17 @@
 using namespace std;
 void show() {
     chis::Solution *slu = chis::MakeSolution(15);
-    /*
-           X
-    
-          OO X
-    */
-    slu->Do(8,8);
-    slu->Do(7,7);
-    slu->Do(9,7);
-    slu->Do(7,9);
-    slu->Do(10,8);
-    slu->Do(7,8);
+    slu->Do(7, 7);
+    slu->Do(1, 1);
+    slu->Do(7, 8);
+    slu->Do(2, 2);
+    slu->Do(7, 9);
+    slu->Do(7, 6);
+    // slu->Do(7, 9);
+    // slu->Do(7, 5);
+    // slu->Do(1, 13);
     if (1) {
-        auto ret = slu->Search();
+        auto ret = slu->Search(5);
         for (size_t i = 0; i < 3 && i < ret.size(); ++i) {
             auto [x, y] = ret[i].first;
             cout << x << "\t" << y << "\t" << ret[i].second << endl;
@@ -36,6 +34,8 @@ void show() {
              << "最佳着法剪枝" << slu->stat.bestmove_pass_cnt << endl
              << "主要变例搜索尝试" << slu->stat.pvs_try_cnt << endl
              << "主要变例搜索剪枝" << slu->stat.pvs_pass_cnt << endl
+             << "延伸节点" << slu->stat.extend_try_cnt << endl
+             << "延伸杀棋节点" << slu->stat.extend_ending_cnt << endl
              << "总节点数" << slu->stat.node_cnt << endl;
         static const std::string patternName[] = {
             "死棋", "眠一",  "活一",  "眠二", "活二A", "活二B", "活二C",

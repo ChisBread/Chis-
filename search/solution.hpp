@@ -31,13 +31,15 @@ struct statInfo {
     size_t bestmove_pass_cnt = 0;
     size_t pvs_try_cnt = 0;
     size_t pvs_pass_cnt = 0;
+    size_t extend_try_cnt = 0;
+    size_t extend_ending_cnt = 0;
     size_t node_cnt = 0;
 };
 using MovWithVal = vector_type<std::pair<std::tuple<int, int>, int>>;
 using MovsTy = vector_type<std::tuple<int, int>>;
 class Solution {
    public:
-    virtual MovWithVal Search(const size_t MAX_DEPTH = 5,
+    virtual MovWithVal Search(const size_t MAX_DEPTH = 6,
                               const MovWithVal &recommend = {}) = 0;
     virtual void Do(int i, int j) = 0;
     void Do(MovsTy movs) {
@@ -52,7 +54,7 @@ class Solution {
     virtual void StopSearch() = 0;
     virtual void StartSearch() = 0;
     virtual bool IsStop() = 0;
-    virtual std::tuple<int32_t, bool> Ending() = 0;
+    virtual std::tuple<int, GAME_STATUS> Ending() = 0;
     virtual void Reset(size_t MEM_BYTE = 128000000) = 0;
     virtual pattern_info PatternInfo() const = 0;
     virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(
@@ -70,7 +72,7 @@ class solution : public Solution {
         : TT_SIZE(MEM_BYTE / sizeof(ttInfo)), TT(MEM_BYTE / sizeof(ttInfo)) {}
 
    public:  //以下方法都是线程不安全的，一个线程建议就搞一个实例
-    virtual MovWithVal Search(const size_t MAX_DEPTH = 5,
+    virtual MovWithVal Search(const size_t MAX_DEPTH = 6,
                               const MovWithVal &recommend = {}) {
         StartSearch();
         MovWithVal moves;
@@ -79,10 +81,12 @@ class solution : public Solution {
         }
         for (int depth = 0; depth <= MAX_DEPTH; ++depth) {
             for (auto &mov : moves) {
+                if(IsStop()) {
+                    return moves;
+                }
                 auto [i, j] = mov.first;
                 board.Do(i, j);  //落子
                 int val;
-                //如果已经找到PV, 则后续节点使用PVS
                 val = -AlphaBeta(-WON, WON, depth);
                 board.Undo();
                 mov.second = val;
@@ -125,7 +129,7 @@ class solution : public Solution {
     virtual bool IsStop() {
         return AlphaBetaPtr == &solution<Board>::AlphaBetaEnd;
     }
-    virtual std::tuple<int32_t, bool> Ending() {
+    virtual std::tuple<int, GAME_STATUS> Ending() {
         return board.Ending();
     }
     virtual void Reset(size_t MEM_BYTE = 128000000) {
@@ -158,9 +162,12 @@ class solution : public Solution {
     //带Alpha-Beta剪枝的Min-Max, 使用NegaMax简化形式
     //增加了置换表优化
     //增加了主要变例搜索优化
-    int AlphaBeta(int alpha, int beta, int depth) {
+    int AlphaBeta(int alpha, int beta, int depth, int force = 0) {
         bool isZeroWin = ABS(beta - alpha) == 1;
         ++stat.node_cnt;
+        if(force) {
+            ++stat.extend_try_cnt;
+        }
         //命中缓存
         int maxVal = INT32_MIN;
         std::tuple<int, int> bestMove = {-1, -1};
@@ -209,17 +216,34 @@ class solution : public Solution {
         };
         {
             //叶子节点
-            if (auto [val, end] = board.Ending(); end) {
+            auto [val, status] = board.Ending();
+            if ( status == GAME_STATUS::ENDING) {
+                if(force) {
+                    ++stat.extend_ending_cnt;
+                }
                 ++stat.leaf_cnt;
                 ++stat.ending_cnt;
                 //局面终结
                 record_tt(board.Hash(), depth, RELATION_VAL::PV, val, bestMove);
                 return val;
             }
-            if (depth == 0) {
-                ++stat.leaf_cnt;
-                int val = board.Evaluation();
-                return val;
+            if(depth <= 0) {//终结或者延伸
+                switch (status) {
+                case GAME_STATUS::DEFEND://防守延伸
+                    force = 1;
+                    break;
+                case GAME_STATUS::ATTACK://进攻延伸
+                    force = 1;
+                    break;
+                default:
+                    force = 0;
+                    break;
+                }
+                if(force == 0 || depth < 0) {//强制搜索最多一层
+                    ++stat.leaf_cnt;
+                    int val = board.Evaluation();
+                    return val;
+                }
             }
         }
 
@@ -237,14 +261,14 @@ class solution : public Solution {
                 if (foundPV) {
                     ++stat.pvs_try_cnt;
                     val =
-                        -(this->*AlphaBetaPtr)(-alpha - 1, -alpha, next_depth);
+                        -(this->*AlphaBetaPtr)(-alpha - 1, -alpha, next_depth, force);
                     if (val > alpha && val < beta) {
-                        val = -(this->*AlphaBetaPtr)(-beta, -alpha, next_depth);
+                        val = -(this->*AlphaBetaPtr)(-beta, -alpha, next_depth, force);
                     } else {
                         ++stat.pvs_pass_cnt;
                     }
                 } else {
-                    val = -(this->*AlphaBetaPtr)(-beta, -alpha, next_depth);
+                    val = -(this->*AlphaBetaPtr)(-beta, -alpha, next_depth, force);
                 }
                 if (val >= beta) {
                     return {val, true};
@@ -289,7 +313,7 @@ class solution : public Solution {
                   maxVal, bestMove);
         return maxVal;
     }
-    int AlphaBetaEnd(int alpha, int beta, int depth) {
+    int AlphaBetaEnd(int alpha, int beta, int depth, int force) {
         return alpha;  //跳到叶节点
     }
 
@@ -299,7 +323,7 @@ class solution : public Solution {
     vector_type<ttInfo> TT;
     std::mutex ABPtrMtx;
     int (solution<Board>::*AlphaBetaPtr)(int, int,
-                                         int) = &solution<Board>::AlphaBeta;
+                                         int, int) = &solution<Board>::AlphaBeta;
 };
 Solution *MakeSolution(size_t size, size_t MEM_BYTE = 128000000) {
     switch (size) {

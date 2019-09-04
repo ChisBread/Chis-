@@ -9,6 +9,13 @@ struct pattern_info {
     int8_t pattern_cnt_blk[16] = {};
     int8_t pattern_cnt_wht[16] = {};
 };
+enum GAME_STATUS {
+    NORMAL,
+    ENDING,
+    DEFEND,
+    ATTACK,
+    DRAW,
+};
 //五子棋棋盘-状态/Hash/...
 template <size_t size = 15, size_t offset = 5,
           typename BoardTy = GomokuBitBoard<size, offset>>
@@ -62,7 +69,6 @@ class GomokuBoard {
                 if(v == BOARD_VAL::BLK) {//棋型增加
                     ++pinfo.pattern_cnt_blk[pattern_type[pats[k]|(v << 10)] & 0xF];
                 } else {
-                    //cout << "ADD " << bitset_type<22>(pats[k]).to_string() << "\t" << int(pattern_type[pats[k]] >> 4) << "\t" << i << "," << j << endl;
                     ++pinfo.pattern_cnt_wht[pattern_type[pats[k]|(v << 10)] >> 4];
                 }
                 for(int neg = -1; neg < 2; neg += 2) {//每条线2个偏移方向
@@ -82,7 +88,6 @@ class GomokuBoard {
                                 if(side == BOARD_VAL::BLK) {
                                     --pinfo.pattern_cnt_blk[pattern_type[pat] & 0xF];//减去对应的旧值
                                 } else if(side == BOARD_VAL::WHT) {
-                                    //cout << "SUB " << bitset_type<22>(pat).to_string() << "\t" << int(pattern_type[pat] >> 4) << "\t" << xn << "," << yn << endl;
                                     --pinfo.pattern_cnt_wht[pattern_type[pat] >> 4];//减去对应的旧值
                                 }
                                 if(side == v) {//同色点会被补回
@@ -112,24 +117,9 @@ class GomokuBoard {
                 if(val == BOARD_VAL::BLK) {
                     ++pinfo.pattern_cnt_blk[pattern_type[pat] & 0xF];
                 } else if(val == BOARD_VAL::WHT) {
-                    //cout << "ADD " << bitset_type<22>(pat).to_string() << "\t" << int(pattern_type[pat] >> 4) << "\t" << i << "," << j << endl;
                     ++pinfo.pattern_cnt_wht[pattern_type[pat] >> 4];
                 }
             }
-        }
-        //cout << "DO <<<<<<<<<<<<<<<<" << i << "," << j << (v==BOARD_VAL::BLK?"黑":"白") << "<<<<<<<<<<<<<<<" << endl;
-        static const std::string patternName[] = {
-            "死棋", "眠一",  "活一",  "眠二", "活二A", "活二B", "活二C",
-            "眠三", "活三A", "活三B", "眠四", "活四A", "活四B", "成五",
-        };
-        for (int i = 0; i < 14; ++i) {
-            if (!PatternInfo().pattern_cnt_blk[i] &&
-                !PatternInfo().pattern_cnt_wht[i]) {
-                continue;
-            }
-            //cout << "GLOBAL PATTERN " << patternName[i];
-            //cout << " 黑:" << int(PatternInfo().pattern_cnt_blk[i]);
-            //cout << "白:" << int(PatternInfo().pattern_cnt_wht[i]) << std::endl;
         }
         return *this;
     }
@@ -141,21 +131,6 @@ class GomokuBoard {
         board.Reset(doChain.back().i, doChain.back().j);  //棋盘置空
         zobrist.Set(doChain.back().i, doChain.back().j,
                     doChain.back().v);  // hash变化
-        //cout << "UNDO <<<<<<<<<<<<<<<<" << doChain.back().i << "," << doChain.back().j << "<<<<<<<<<<<<<<<" << endl;
-        static const std::string patternName[] = {
-            "死棋", "眠一",  "活一",  "眠二", "活二A", "活二B", "活二C",
-            "眠三", "活三A", "活三B", "眠四", "活四A", "活四B", "成五",
-        };
-        for (int i = 0; i < 14; ++i) {
-            if (!PatternInfo().pattern_cnt_blk[i] &&
-                !PatternInfo().pattern_cnt_wht[i]) {
-                continue;
-            }
-            //cout << "GLOBAL PATTERN " << patternName[i];
-            //cout << " 黑:" << int(PatternInfo().pattern_cnt_blk[i]);
-            //cout << "白:" << int(PatternInfo().pattern_cnt_wht[i]) << std::endl;
-        }
-        
         doChain.pop_back();
         return *this;
     }
@@ -302,7 +277,7 @@ class GomokuBoard {
         return ret;
     }
     // 评估函数 NegaEva
-    int32_t Evaluation() {
+    int Evaluation() {
         static const int evaluation[14] = {0,  1,   10,  12,  30,   35,   40,
                                            45, 100, 120, 230, 1000, 1000, WON};
         int val = 0;
@@ -312,41 +287,36 @@ class GomokuBoard {
         }
         return Turn() == BOARD_VAL::WHT ? -val : val;
     }
-    std::tuple<int32_t, bool> Ending() {
+    std::tuple<int, GAME_STATUS> Ending() {
         
         if (doChain.size() == size * size) {
-            return {0, true};
+            return {0, GAME_STATUS::DRAW};
         }
-        int32_t val = 0, val2 = 0;
         // check 先手胜利 A为下一步先手 返回A的胜负
-        auto check = [this](const int8_t(&A)[16], const int8_t(&B)[16]) {
+        auto check = [this](const int8_t(&A)[16], const int8_t(&B)[16]) -> std::tuple<int, GAME_STATUS> {
+            /********* 终结 *********/
             // B已经赢了
             if (B[PAT_TYPE::FIVE]) {
-                //cout << "WON IN " << 1 << endl;
-                return -WON;
+                return {-WON, GAME_STATUS::ENDING};
             }
             // A已经赢了
             else if (A[PAT_TYPE::FIVE]) {
-                //cout << "WON IN " << 2 << endl;
-                return WON;
+                return {WON, GAME_STATUS::ENDING};
             }
             // A先手，有4直接赢
             else if (A[PAT_TYPE::L4A] || A[PAT_TYPE::L4B] || A[PAT_TYPE::S4]) {
-                //cout << "WON IN " << 3 << endl;
-                return WON;
+                return {WON, GAME_STATUS::ENDING};
             }
             // 到这里，A已经没5没4了
             // B活四
             if (B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B]) {
-                //cout << "WON IN " << 4 << endl;
-                return -WON;
+                return {WON, GAME_STATUS::ENDING};
             }
             // B没有成5点
             if (!B[PAT_TYPE::S4]) {
                 // A有成活四点就必胜了
                 if (A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B]) {
-                    //cout << "WON IN " << 5 << "\t" << Turn() << endl;
-                    return WON;
+                    return {WON, GAME_STATUS::ENDING};
                 }
             }
             // A没有成4点（只能被动防守），则考虑B有杀
@@ -354,31 +324,39 @@ class GomokuBoard {
                 // B必胜的情况
                 // B下一把有两个及以上成5点，大概率堵不住（待统计）
                 if (B[PAT_TYPE::S4] > 1) {
-                    //cout << "WON IN " << 6 << endl;
-                    return -WON;
+                    return {-WON, GAME_STATUS::ENDING};
                 }
                 // B下一把有一个成5点（只能防守），同时又有成活4点
                 else if (B[PAT_TYPE::S4] &&
                          (B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B])) {
-                    //cout << "WON IN " << 7 << endl;
-                    return -WON;
+                    return {-WON, GAME_STATUS::ENDING};
                 }
                 // B下一把有两个及以上成活四点 (双活三)
                 else if (B[PAT_TYPE::L3A] + B[PAT_TYPE::L3B] > 1) {
-                    //cout << "WON IN " << 8 << endl;
-                    return -WON;
+                    return {-WON, GAME_STATUS::ENDING};
                 }
             }
-
-            return 0;
+            /********* 防守 *********/
+            //对方有4或者活3
+            if (B[PAT_TYPE::S4] || B[PAT_TYPE::L3A] || B[PAT_TYPE::L3B]) {
+                return {0, GAME_STATUS::DEFEND};
+            }
+            /********* 进攻 *********/
+            if (A[PAT_TYPE::S3] > 1) {
+                // || A[PAT_TYPE::L2A] || A[PAT_TYPE::L2B] || A[PAT_TYPE::L2C]
+                return {0, GAME_STATUS::ATTACK};
+            }
+            return {0, GAME_STATUS::NORMAL};
         };
-
+        int val = 0;
+        GAME_STATUS status;
         if (Turn() == BOARD_VAL::BLK) {  //黑先手
-            val = check(pinfo.pattern_cnt_blk, pinfo.pattern_cnt_wht);
+            std::tie(val, status) = check(pinfo.pattern_cnt_blk, pinfo.pattern_cnt_wht);
         } else {
-            val = -check(pinfo.pattern_cnt_wht, pinfo.pattern_cnt_blk);
+            std::tie(val, status) = check(pinfo.pattern_cnt_blk, pinfo.pattern_cnt_wht);
+            val = -val;
         }
-        return {Turn() == BOARD_VAL::WHT ? -val : val, val != 0};
+        return {Turn() == BOARD_VAL::WHT ? -val : val, status};
     }
     int32_t PointEvaluation(int i, int j) {
         static const int evaluation[14] = {0,  1,   10,  12,  30,   35,   40,
