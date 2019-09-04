@@ -7,15 +7,19 @@
 using namespace std;
 void show() {
     chis::Solution *slu = chis::MakeSolution(15);
-    slu->Do(7, 7);
-    slu->Do(1, 1);
-    slu->Do(7, 8);
-    slu->Do(2, 2);
-    slu->Do(7, 9);
-    slu->Do(7, 6);
-    // slu->Do(7, 9);
-    // slu->Do(7, 5);
-    // slu->Do(1, 13);
+    /*
+           X
+    
+          OO X
+    */
+    slu->Do(8,8);
+    slu->Do(6,8);
+    slu->Do(8,7);
+    slu->Do(8,10);
+    // slu->Do(8,6);
+    // slu->Do(8,5);
+    // slu->Do(9,7);
+    //slu->Do(7,9);   
     // slu->Evaluation();
     if (1) {
         auto ret = slu->Search();

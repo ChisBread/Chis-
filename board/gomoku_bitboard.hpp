@@ -24,7 +24,6 @@ class GomokuBitBoard {
             auto[x, y] = Mappings[k](i, j, size+offset*2);
             board[k][x] &= ~(bitline_t(0x3U) << y*2);//mask
             board[k][x] |= val << y*2;
-            
         }
     }
     void ResetReal(int i, int j) { 

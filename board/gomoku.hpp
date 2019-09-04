@@ -62,44 +62,36 @@ class GomokuBoard {
                 if(v == BOARD_VAL::BLK) {//棋型增加
                     ++pinfo.pattern_cnt_blk[pattern_type[pats[k]|(v << 10)] & 0xF];
                 } else {
-                    ++pinfo.pattern_cnt_wht[pattern_type[pats[k]] >> 4];
+                    //cout << "ADD " << bitset_type<22>(pats[k]).to_string() << "\t" << int(pattern_type[pats[k]] >> 4) << "\t" << i << "," << j << endl;
+                    ++pinfo.pattern_cnt_wht[pattern_type[pats[k]|(v << 10)] >> 4];
                 }
                 for(int neg = -1; neg < 2; neg += 2) {//每条线2个偏移方向
-                    bool flag  = true;//是否有效范围
                     for(int l = 1; l < 6; ++l) {
                         int mv = neg == -1?-l:l;
                         BOARD_VAL side = BOARD_VAL((pats[k] >> (5+mv)*2)&0x3U);//两个方向
                         auto[xn, yn] = Nexts[k](i,j,mv);//偏移
-                        if(flag) {
-                            ++minfo.nbrate[xn+offset][yn+offset][l];//xn,yn距离为l的棋子+1
-                        }
+                        ++minfo.nbrate[xn+offset][yn+offset][l];//xn,yn距离为l的棋子+1
                         if(side != BOARD_VAL::EMP) {//遇到非空且不等于将落子颜色的棋子
                             //非空点，检查是否为某一棋型的中心
-                            if(minfo.pattern_center[xn+offset][yn+offset]) {
+                            if(minfo.pattern_center[xn+offset][yn+offset]) {//遇到中心棋型，处理后截断
                                 uint32_t pat = GetPattern(xn, yn, k);//得到旧的棋型中心的棋型
                                 BOARD_VAL val = BOARD_VAL((pat >> 10)&0x3U);//得到颜色
-                                if(val == v) {//同色点
-                                    if(flag) {//如果在有效棋型范围内
-                                        //同色子的棋型取消中心位置//不需要补上新值
-                                        minfo.pattern_center[xn+offset][yn+offset] = false;//取消影响范围内的棋型中心
-                                        if(val == BOARD_VAL::BLK) {
-                                            --pinfo.pattern_cnt_blk[pattern_type[pat] & 0xF];//减去对应的旧值
-                                        } else {
-                                            --pinfo.pattern_cnt_wht[pattern_type[pat] >> 4];//减去对应的旧值
-                                        }
-                                    }
-                                } else {//异色点，更新
-                                    if(val == BOARD_VAL::BLK) {
-                                        --pinfo.pattern_cnt_blk[pattern_type[pat] & 0xF];//减去对应的旧值
-                                    } else {
-                                        --pinfo.pattern_cnt_wht[pattern_type[pat] >> 4];//减去对应的旧值
-                                    }
+                                //cout << "SUB " << bitset_type<22>(pat).to_string() << "\t" << int(pattern_type[pat] >> 4) << "\t" << xn << "," << yn << endl;
+                                if(val == BOARD_VAL::BLK) {
+                                    --pinfo.pattern_cnt_blk[pattern_type[pat] & 0xF];//减去对应的旧值
+                                } else {
+                                    --pinfo.pattern_cnt_wht[pattern_type[pat] >> 4];//减去对应的旧值
+                                }
+                                if(val == v) {//同色点会被补回
+                                    //同色子的棋型取消中心位置//不需要补上新值
+                                    minfo.pattern_center[xn+offset][yn+offset] = false;//取消影响范围内的棋型中心
+                                } else if(val != BOARD_VAL::INV) {//异色点，更新
                                     need_update_pattern.push_back({xn, yn, k});
                                 }
                             }
                             if(side != v) {
                                 //这个方向的遍历结束，往后的点对nbrate不会有影响
-                                flag = false;
+                                break;
                             }
                         }
                     }
@@ -119,6 +111,20 @@ class GomokuBoard {
                 }
             }
         }
+        // cout << "<<<<<<<<<<<<<<<<" << i << "," << j << (v==BOARD_VAL::BLK?"黑":"白") << "<<<<<<<<<<<<<<<" << endl;
+        // static const std::string patternName[] = {
+        //     "死棋", "眠一",  "活一",  "眠二", "活二A", "活二B", "活二C",
+        //     "眠三", "活三A", "活三B", "眠四", "活四A", "活四B", "成五",
+        // };
+        // for (int i = 0; i < 14; ++i) {
+        //     if (!PatternInfo().pattern_cnt_blk[i] &&
+        //         !PatternInfo().pattern_cnt_wht[i]) {
+        //         continue;
+        //     }
+        //     cout << "GLOBAL PATTERN " << patternName[i];
+        //     cout << " 黑:" << int(PatternInfo().pattern_cnt_blk[i]);
+        //     cout << "白:" << int(PatternInfo().pattern_cnt_wht[i]) << std::endl;
+        // }
         return *this;
     }
     //撤销落子
