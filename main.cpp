@@ -13,14 +13,11 @@ void show() {
           OO X
     */
     slu->Do(8,8);
-    slu->Do(6,8);
-    slu->Do(8,7);
-    slu->Do(8,10);
-    // slu->Do(8,6);
-    // slu->Do(8,5);
-    // slu->Do(9,7);
-    //slu->Do(7,9);   
-    // slu->Evaluation();
+    slu->Do(7,7);
+    slu->Do(9,7);
+    slu->Do(7,9);
+    slu->Do(10,8);
+    slu->Do(7,8);
     if (1) {
         auto ret = slu->Search();
         for (size_t i = 0; i < 3 && i < ret.size(); ++i) {
