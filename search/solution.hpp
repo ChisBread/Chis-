@@ -48,6 +48,23 @@ class Solution {
    public:
     //搜索推荐着法序列(带估值)
     virtual MovWithVal Search(const size_t MAX_DEPTH = 6) = 0;
+    //搜索推荐着法序列(带估值) 增加超时选项
+    MovWithVal Search(const int timeout_turn, const size_t MAX_DEPTH) {
+        auto rets_future = std::async(std::launch::async, [&]() { return Search(MAX_DEPTH); });
+        std::future_status status;
+        do {
+            status = rets_future.wait_for(std::chrono::milliseconds(timeout_turn>50?timeout_turn-50:timeout_turn));
+            if (status == std::future_status::deferred) {
+                StopSearch();
+            } else if (status == std::future_status::timeout) {
+                StopSearch();
+            }
+        } while (status != std::future_status::ready);
+        if (IsStop()) {
+            StartSearch();
+        }
+        return rets_future.get();
+    }
     //停止搜索 原理:AlphaBeta函数指针切换到AlphaBetaEnd
     //使用: 异步+超时控制
     virtual void StopSearch() = 0;
@@ -156,10 +173,10 @@ class solution : public Solution {
                 auto [i, j] = mov.first;
                 board.Do(i, j);  //落子
                 int val;
-                val = -AlphaBeta(alpha, beta, depth);
+                val = -AlphaBeta(-beta, -alpha, depth);
                 board.Undo();
                 mov.second = val;
-                if (val == beta) {
+                if (val >= beta) {
                     break;
                 }
                 if (val > alpha) {
@@ -251,14 +268,14 @@ class solution : public Solution {
                     case GAME_STATUS::DEFEND:  //防守延伸
                         force = 1;
                         break;
-                    case GAME_STATUS::ATTACK:  //进攻延伸
-                        force = 1;
-                        break;
+                    // case GAME_STATUS::ATTACK:  //进攻延伸
+                    //     force = 1;
+                    //     break;
                     default:
-                        force = 0;
+                        force = 0;             //停止延伸
                         break;
                 }
-                if (force == 0 || depth < 0) {  //强制搜索最多一层
+                if (force == 0 || depth < -2) {  //强制搜索最多一层
                     ++stat.leaf_cnt;
                     int val = board.Evaluation();
                     return val;

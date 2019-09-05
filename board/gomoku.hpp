@@ -25,7 +25,7 @@ class GomokuBoard {
     struct moves_info {
         //相邻点不会超过127
         int8_t nbrate[size + offset * 2][size + offset * 2][6] = {};
-        bool pattern_center[size + offset * 2][size + offset * 2] = {};
+        bool pattern_center[size + offset * 2][size + offset * 2][4] = {};
     };
     struct do_info {
         int i;
@@ -57,8 +57,8 @@ class GomokuBoard {
             //得到棋型
             uint32_t pats[4] = {};
             std::tie(pats[0], pats[1], pats[2], pats[3]) = GetPattern(i, j);
-            minfo.pattern_center[i + offset][j + offset] = true;  //选为棋型中心
             for (int k = 0; k < 4; ++k) {                         //四线棋型都要处理
+                minfo.pattern_center[i + offset][j + offset][k] = true;  //选为棋型中心
                 // TODO 更改resource的生成逻辑
                 if (v == BOARD_VAL::BLK) {  //新棋型增加
                     ++pinfo.pattern_cnt_blk[pattern_type_map[pats[k] | (v << 10)] & 0xF];
@@ -81,7 +81,7 @@ class GomokuBoard {
                             // 4.落子有不被 异色棋型中心点 阻挡的
                             // 同色棋型中心点，则需要删除同色棋型中心点的标记和棋型(相当于吸收棋型) 5.落子有被   异色棋型中心点
                             // 阻挡的 同色棋型中心点, 则同色棋型中心点不收影响(中间有隔断) 非空点，检查是否为某一棋型的中心
-                            if (minfo.pattern_center[xn + offset][yn + offset]) {  //遇到中心棋型，处理后截断
+                            if (minfo.pattern_center[xn + offset][yn + offset][k]) {  //遇到中心棋型，处理后截断
                                 uint32_t pat = GetPattern(xn, yn, k);              //得到旧的棋型中心的棋型
                                 //同色+不被异色阻挡 || 异色+不被同色阻挡
                                 //删除对应棋型
@@ -95,7 +95,7 @@ class GomokuBoard {
                                 if (side == v) {  //同色点会被补回
                                     //同色子的棋型取消中心位置(被吸收) 且不需要补上新值
                                     if (!diffCenter) {
-                                        minfo.pattern_center[xn + offset][yn + offset] = false;
+                                        minfo.pattern_center[xn + offset][yn + offset][k] = false;
                                     }
                                     sameCenter = true;
                                 } else {

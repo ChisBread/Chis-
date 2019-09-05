@@ -85,11 +85,11 @@ class GomocupProto {
 
    public:
     std::tuple<int, int> Search() {
-        //搜索 实现简单的超时控
+        //搜索 实现简单的超时控制
         auto rets_future = std::async(std::launch::async, [&]() { return slu->Search(config.MAX_DEPTH); });
         std::future_status status;
         do {
-            status = rets_future.wait_for(std::chrono::milliseconds(config.timeout_turn));
+            status = rets_future.wait_for(std::chrono::milliseconds(config.timeout_turn>50?config.timeout_turn-50:config.timeout_turn));
             if (status == std::future_status::deferred) {
                 io.Debug() << "Search Deferred" << std::endl;
                 slu->StopSearch();

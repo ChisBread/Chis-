@@ -93,6 +93,9 @@ void CLI() {
     };
     while (true) {
         fresh();
+        if(ABS(score) == chis::WON) {
+            cin.get();
+        }
         if (auto [val, status] = slu->Ending(); status == chis::GAME_STATUS::ENDING) {
             if ((val == chis::WON) == (slu->Turn() == chis::BOARD_VAL::BLK)) {
                 cout << "对局结束 黑胜!" << endl;
@@ -101,13 +104,8 @@ void CLI() {
             }
             break;
         }
-        //人类玩家
-        if ((first == 1) == (slu->Turn() == chis::BOARD_VAL::BLK)) {
-            int x, y;
-            cin >> x >> y;
-            slu->Do(x, y);
-            score = -1;
-        } else {
+        //电脑对战 或者
+        if(first > 2 || (first == 1) == (slu->Turn() == chis::BOARD_VAL::BLK) ){
             auto ret = slu->Search(6);
             for (size_t i = 0; i < 3 && i < ret.size(); ++i) {
                 highlight.push_back(ret[i].first);
@@ -116,6 +114,16 @@ void CLI() {
             }
             slu->Do(highlight.front());  //落子
             score = ret.front().second;
+        } else  {
+            int x, y;
+            cin >> x >> y;
+            if(x == -1 || y == -1) {
+                slu->Undo();
+                slu->Undo();
+            } else {
+                slu->Do(x, y);
+            }
+            score = -1;
         }
     }
 }
