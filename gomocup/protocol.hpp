@@ -22,20 +22,17 @@ struct GomocupConfig {
 };
 inline std::string upperstr(const std::string &str) {
     std::string ret = str;
-    std::transform(ret.begin(), ret.end(), ret.begin(),
-                   [](unsigned char c) { return std::toupper(c); });
+    std::transform(ret.begin(), ret.end(), ret.begin(), [](unsigned char c) { return std::toupper(c); });
     return ret;
 }
 inline std::string lowerstr(const std::string &str) {
     std::string ret = str;
-    std::transform(ret.begin(), ret.end(), ret.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
+    std::transform(ret.begin(), ret.end(), ret.begin(), [](unsigned char c) { return std::tolower(c); });
     return ret;
 }
 class stream_wrapper {
    public:
-    stream_wrapper(std::istream &in, std::ostream &out)
-        : inputer(in), outer(out) {}
+    stream_wrapper(std::istream &in, std::ostream &out) : inputer(in), outer(out) {}
     stream_wrapper &operator>>(std::string &str) {
         inputer >> str;
         str = upperstr(str);
@@ -72,18 +69,15 @@ class stream_wrapper {
 class GomocupProto {
    public:
    public:
-    GomocupProto(std::istream &in = std::cin, std::ostream &out = std::cout)
-        : io(in, out) {}
+    GomocupProto(std::istream &in = std::cin, std::ostream &out = std::cout) : io(in, out) {}
     int Run() {
         std::string cmd;
         while ((io >> cmd).InOK() && !is_ending) {
             if (!CMD2Func.count(cmd)) {
-                io.Error() << "command \"" << cmd << "\" not found"
-                           << std::endl;
+                io.Error() << "command \"" << cmd << "\" not found" << std::endl;
             }
             if (int code = (this->*CMD2Func[cmd])(); code) {
-                io.Debug() << "command \"" << cmd << "\" return code " << code
-                           << std::endl;
+                io.Debug() << "command \"" << cmd << "\" return code " << code << std::endl;
             }
         }
         return 0;
@@ -92,13 +86,10 @@ class GomocupProto {
    public:
     std::tuple<int, int> Search() {
         //搜索 实现简单的超时控
-        auto rets_future = std::async(std::launch::async, [&]() {
-            return slu->Search(config.MAX_DEPTH);
-        });
+        auto rets_future = std::async(std::launch::async, [&]() { return slu->Search(config.MAX_DEPTH); });
         std::future_status status;
         do {
-            status = rets_future.wait_for(
-                std::chrono::milliseconds(config.timeout_turn));
+            status = rets_future.wait_for(std::chrono::milliseconds(config.timeout_turn));
             if (status == std::future_status::deferred) {
                 io.Debug() << "Search Deferred" << std::endl;
                 slu->StopSearch();
@@ -118,7 +109,7 @@ class GomocupProto {
         slu->Do(x, y);
         io.Debug() << "///////////AFTER MOVE"
                    << "(" << x << "," << y << ")///////////" << std::endl;
-        //ShowPointPattrtn(x, y);
+        // ShowPointPattrtn(x, y);
         ShowGlobalPattrtn();
     }
 
@@ -198,12 +189,10 @@ class GomocupProto {
         key = lowerstr(key);
         if (key == "timeout_turn") {
             config.timeout_turn = atoi(val.c_str());
-            io.Debug() << "accepted timeout_turn:" << config.timeout_turn
-                       << endl;
+            io.Debug() << "accepted timeout_turn:" << config.timeout_turn << endl;
         } else if (key == "timeout_match") {
             config.timeout_match = atoi(val.c_str());
-            io.Debug() << "accepted timeout_match:" << config.timeout_match
-                       << endl;
+            io.Debug() << "accepted timeout_match:" << config.timeout_match << endl;
         } else if (key == "max_memory") {
             config.max_memory = atoi(val.c_str());
             io.Debug() << "accepted max_memory:" << config.max_memory << endl;
@@ -267,16 +256,12 @@ class GomocupProto {
         io.Debug() << "胜利节点" << slu->stat.ending_cnt << std::endl;
         io.Debug() << "置换表写入" << slu->stat.tt_record_cnt << std::endl;
         io.Debug() << "置换表命中" << slu->stat.tt_hit_cnt << std::endl;
-        io.Debug() << "节点置换(end)" << slu->stat.tt_ending_pass_cnt
-                   << std::endl;
+        io.Debug() << "节点置换(end)" << slu->stat.tt_ending_pass_cnt << std::endl;
         io.Debug() << "节点置换(pv)" << slu->stat.tt_pv_pass_cnt << std::endl;
-        io.Debug() << "节点置换(alpha)" << slu->stat.tt_alpha_pass_cnt
-                   << std::endl;
-        io.Debug() << "节点置换(beta)" << slu->stat.tt_beta_pass_cnt
-                   << std::endl;
+        io.Debug() << "节点置换(alpha)" << slu->stat.tt_alpha_pass_cnt << std::endl;
+        io.Debug() << "节点置换(beta)" << slu->stat.tt_beta_pass_cnt << std::endl;
         io.Debug() << "最佳着法尝试" << slu->stat.bestmove_try_cnt << std::endl;
-        io.Debug() << "最佳着法剪枝" << slu->stat.bestmove_pass_cnt
-                   << std::endl;
+        io.Debug() << "最佳着法剪枝" << slu->stat.bestmove_pass_cnt << std::endl;
         io.Debug() << "主要变例搜索尝试" << slu->stat.pvs_try_cnt << std::endl;
         io.Debug() << "主要变例搜索剪枝" << slu->stat.pvs_pass_cnt << std::endl;
         io.Debug() << "延伸节点" << slu->stat.extend_try_cnt << endl;
@@ -291,14 +276,12 @@ class GomocupProto {
             "眠三", "活三A", "活三B", "眠四", "活四A", "活四B", "成五",
         };
         for (int i = 0; i < 14; ++i) {
-            if (!slu->PatternInfo().pattern_cnt_blk[i] &&
-                !slu->PatternInfo().pattern_cnt_wht[i]) {
+            if (!slu->PatternInfo().pattern_cnt_blk[i] && !slu->PatternInfo().pattern_cnt_wht[i]) {
                 continue;
             }
             io.Debug() << "GLOBAL PATTERN " << patternName[i];
             io.Debug() << " 黑:" << int(slu->PatternInfo().pattern_cnt_blk[i]);
-            io.Debug() << "白:" << int(slu->PatternInfo().pattern_cnt_wht[i])
-                       << std::endl;
+            io.Debug() << "白:" << int(slu->PatternInfo().pattern_cnt_wht[i]) << std::endl;
         }
         return 0;
     }
@@ -310,8 +293,7 @@ class GomocupProto {
         int cnts_blk[16] = {}, cnts_wht[16] = {};
         {
             uint8_t pats[4];
-            std::tie(pats[0], pats[1], pats[2], pats[3]) =
-                slu->GetPatternType(x, y);
+            std::tie(pats[0], pats[1], pats[2], pats[3]) = slu->GetPatternType(x, y);
             for (auto pat : pats) {
                 ++cnts_blk[pat & 0xf];
                 ++cnts_wht[pat >> 4];
@@ -336,17 +318,9 @@ class GomocupProto {
     GomocupConfig config;
     chis::Solution *slu = nullptr;
     std::map<std::string, int (GomocupProto::*)()> CMD2Func = {
-        {"END", &GomocupProto::End},
-        {"START", &GomocupProto::Start},
-        {"TURN", &GomocupProto::Turn},
-        {"BEGIN", &GomocupProto::Begin},
-        {"BOARD", &GomocupProto::Board},
-        {"INFO", &GomocupProto::Info},
-        {"ABOUT", &GomocupProto::About},
-        {"RESTART", &GomocupProto::Restart},
-        {"TAKEBACK", &GomocupProto::Takeback},
-        {"PLAY", &GomocupProto::Play},
-        {"OK", &GomocupProto::OK},
-        {"SHOWINFO", &GomocupProto::ShowInfo}};
+        {"END", &GomocupProto::End},     {"START", &GomocupProto::Start},     {"TURN", &GomocupProto::Turn},
+        {"BEGIN", &GomocupProto::Begin}, {"BOARD", &GomocupProto::Board},     {"INFO", &GomocupProto::Info},
+        {"ABOUT", &GomocupProto::About}, {"RESTART", &GomocupProto::Restart}, {"TAKEBACK", &GomocupProto::Takeback},
+        {"PLAY", &GomocupProto::Play},   {"OK", &GomocupProto::OK},           {"SHOWINFO", &GomocupProto::ShowInfo}};
 };
 }  // namespace chis

@@ -29,8 +29,7 @@ TEST(TESTBoard, BoardBase) {
         for (int j = 0; j < SIZE + OFFSET * 2; ++j) {
             auto cell = board.board.GetReal(i, j);
             //有效性对比
-            if (i - OFFSET >= 0 && i - OFFSET < SIZE && j - OFFSET >= 0 &&
-                j - OFFSET < SIZE) {
+            if (i - OFFSET >= 0 && i - OFFSET < SIZE && j - OFFSET >= 0 && j - OFFSET < SIZE) {
                 EXPECT_EQ(cell, realboard[i - OFFSET][j - OFFSET]);
             } else {
                 EXPECT_EQ(cell, chis::BOARD_VAL::INV);
@@ -162,8 +161,7 @@ TEST(TESTBoard, Patterns) {
             EXPECT_EQ(valwht, rvalblk);
         }
         {  //置反+对称 a.黑白不颠倒 b.棋型一致
-            uint32_t nri = chis::GomokuPatterns::reverse_22bit(
-                chis::GomokuPatterns::reverse_pattern(i));
+            uint32_t nri = chis::GomokuPatterns::reverse_22bit(chis::GomokuPatterns::reverse_pattern(i));
             uint8_t nrvalblk = pattern_map[nri] & 0x0F;
             uint8_t nrvalwht = (pattern_map[nri] >> 4);
             EXPECT_EQ(valblk, nrvalblk);

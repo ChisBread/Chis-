@@ -63,12 +63,10 @@ class GomokuPatterns {
     }
     //将10 01互换
     static uint32_t reverse_pattern(uint32_t pat) {
-        uint32_t reverse =
-            (pat ^ (0x003FFFFFU));  // 11->00 10->01 01->10 00->11
+        uint32_t reverse = (pat ^ (0x003FFFFFU));  // 11->00 10->01 01->10 00->11
         for (uint32_t i = 0; i <= 20; i += 2) {
             //如果对应的位为11或00
-            if (((reverse >> i) & 0x3U) == 0x3U ||
-                ((reverse >> i) & 0x3U) == 0x0U) {
+            if (((reverse >> i) & 0x3U) == 0x3U || ((reverse >> i) & 0x3U) == 0x0U) {
                 reverse ^= (0x3U << i);  //翻转
             }
         }
@@ -111,22 +109,18 @@ class GomokuPatterns {
                     // 时，意味着左侧不填充
                     uint32_t lpaddingside = (l & 0x3U);
                     uint32_t rpaddingside = ((r >> (rightlen * 2 - 2)) & 0x3U);
-                    if (leftlen != 0 &&
-                        !((lpaddingside == 0x3U || lpaddingside == 0x1U))) {
+                    if (leftlen != 0 && !((lpaddingside == 0x3U || lpaddingside == 0x1U))) {
                         continue;
                     }
-                    if (rightlen != 0 &&
-                        !((rpaddingside == 0x3U || rpaddingside == 0x1U))) {
+                    if (rightlen != 0 && !((rpaddingside == 0x3U || rpaddingside == 0x1U))) {
                         continue;
                     }
-                    uint32_t ret_pat =
-                        pat << uint32_t(rightlen * 2);  //腾出右边空间
+                    uint32_t ret_pat = pat << uint32_t(rightlen * 2);  //腾出右边空间
                     ret_pat |= uint32_t(l) << uint32_t(22 - leftlen * 2);
                     ret_pat |= uint32_t(r);
                     ret.push_back(ret_pat);
                     //翻转黑白，使得黑白棋型一致
-                    ret.push_back(reverse_pattern(ret_pat) ^
-                                  0x00400000U);  //同时给第23位置1
+                    ret.push_back(reverse_pattern(ret_pat) ^ 0x00400000U);  //同时给第23位置1
                 }
             }
         }

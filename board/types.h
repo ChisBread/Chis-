@@ -9,7 +9,7 @@ enum BOARD_VAL : uint64_t {  //一些值
     BLK = 0b10,              //黑
     INV = 0b11,              //无效点
 };
-using PattternsTuple = std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> ;
+using PattternsTuple = std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>;
 //棋盘赋值中间类型 b[][]
 template <typename _board_t>
 class assign_tmp {
@@ -24,9 +24,7 @@ class assign_tmp {
 template <typename _board_t>
 class array_tmp {
    public:
-    assign_tmp<_board_t> operator[](size_t j) {
-        return assign_tmp<_board_t>{b, i, j};
-    }
+    assign_tmp<_board_t> operator[](size_t j) { return assign_tmp<_board_t>{b, i, j}; }
 
    public:
     _board_t &b;
