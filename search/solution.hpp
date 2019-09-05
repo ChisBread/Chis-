@@ -48,6 +48,10 @@ class Solution {
             Do(i, j);
         }
     };
+    virtual void Do(std::tuple<int, int> mov) {
+        auto[i,j] = mov;
+        Do(i, j); 
+    }
     virtual MovsTy GetDoChain() const = 0;
     virtual void Undo() = 0;
     virtual BOARD_VAL Get(int i, int j) const = 0;
@@ -64,7 +68,7 @@ class Solution {
         for(int i = 0; i < size; ++i) {
             cout << (i<10?"0":"") << i << " ";
             for(int j = 0; j < size; ++j) {
-                auto[x,y] = GetDoChain().back();
+                auto[x,y] = GetDoChain().empty()?std::tuple{-1,-1}:GetDoChain().back();
                 BOARD_VAL v = Get(i,j);
                 std::string s = i==x&&j==y?"^":" ";
                 std::string highlightStr = highlightSet.count(i*size+j)?"!":" ";
@@ -86,6 +90,7 @@ class Solution {
         }
     }
     virtual MovsTy Moves(bool must = false) = 0;
+    virtual BOARD_VAL Turn() const = 0;
     virtual void StopSearch() = 0;
     virtual void StartSearch() = 0;
     virtual bool IsStop() = 0;
@@ -115,6 +120,7 @@ class solution : public Solution {
             moves.push_back({mov, -WON});
         }
         for (int depth = 0; depth <= MAX_DEPTH; ++depth) {
+            int alpha = -WON, beta = WON;
             for (auto &mov : moves) {
                 if(IsStop()) {
                     return moves;
@@ -122,11 +128,14 @@ class solution : public Solution {
                 auto [i, j] = mov.first;
                 board.Do(i, j);  //落子
                 int val;
-                val = -AlphaBeta(-WON, WON, depth);
+                val = -AlphaBeta(alpha, beta, depth);
                 board.Undo();
                 mov.second = val;
-                if (val == WON) {
+                if(val == beta) {
                     break;
+                }
+                if(val > alpha) {
+                    alpha = val;
                 }
             }
             std::stable_sort(moves.begin(), moves.end(), [](auto a, auto b) {
@@ -182,6 +191,9 @@ class solution : public Solution {
     }
     virtual MovsTy Moves(bool must = false) {
         return board.Moves(must);
+    }
+    virtual BOARD_VAL Turn() const {
+        return board.Turn();
     }
     virtual BOARD_VAL Get(int i, int j) const { return board.Get(i, j); }
     virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(
