@@ -155,6 +155,7 @@ class GomokuBoard {
                 (minfo.nbrate[i+offset][j+offset][1] || 
                  minfo.nbrate[i+offset][j+offset][2] )) {//选择附近至少有一个距离小于2的点的着法
                      sorted.push_back({{i,j}, minfo.nbrate[i+offset][j+offset][1]+minfo.nbrate[i+offset][j+offset][2]});
+                     //cout << "Push Move " << i << "," << j << endl;
                 }
             }
         }
@@ -219,8 +220,10 @@ class GomokuBoard {
                 //己方>敌方
                 //成5>活4>=44=43>33
                 if (me_info[PAT_TYPE::FIVE]) {
+                    //cout << "mov " << 1 << endl;
                     return {{x, y}};
                 } else if (enemy_info[PAT_TYPE::FIVE]) {
+                    //cout << "mov " << 2 << endl;
                     item.second = WON + 9;
                     //己方 活4或者44, 43
                 } else if (me_info[PAT_TYPE::L4A] || me_info[PAT_TYPE::L4B] ||
@@ -228,6 +231,7 @@ class GomokuBoard {
                            (me_info[PAT_TYPE::S4] &&
                             (me_info[PAT_TYPE::L3A] ||
                              me_info[PAT_TYPE::L3B]))) {
+                    //cout << "mov " << 3 << " " << x << "," << y << endl;
                     item.second = WON + 8;
                     //对方 活4或者44, 43
                 } else if (enemy_info[PAT_TYPE::L4A] ||
@@ -236,10 +240,12 @@ class GomokuBoard {
                            (enemy_info[PAT_TYPE::S4] &&
                             (enemy_info[PAT_TYPE::L3A] +
                              enemy_info[PAT_TYPE::L3B]))) {
+                    //cout << "mov " << 4 << endl;
                     item.second = WON + 7;
                     //己方 33
                 } else if (me_info[PAT_TYPE::L3A] + me_info[PAT_TYPE::L3B] >
                            1) {
+                    //cout << "mov " << 5 << endl;
                     item.second = WON + 6;
                     //对方 33
                 } else if (enemy_info[PAT_TYPE::L3A] +
@@ -310,7 +316,7 @@ class GomokuBoard {
             // 到这里，A已经没5没4了
             // B活四
             if (B[PAT_TYPE::L4A] || B[PAT_TYPE::L4B]) {
-                return {WON, GAME_STATUS::ENDING};
+                return {-WON, GAME_STATUS::ENDING};
             }
             // B没有成5点
             if (!B[PAT_TYPE::S4]) {
@@ -353,7 +359,7 @@ class GomokuBoard {
         if (Turn() == BOARD_VAL::BLK) {  //黑先手
             std::tie(val, status) = check(pinfo.pattern_cnt_blk, pinfo.pattern_cnt_wht);
         } else {
-            std::tie(val, status) = check(pinfo.pattern_cnt_blk, pinfo.pattern_cnt_wht);
+            std::tie(val, status) = check(pinfo.pattern_cnt_wht, pinfo.pattern_cnt_blk);
             val = -val;
         }
         return {Turn() == BOARD_VAL::WHT ? -val : val, status};

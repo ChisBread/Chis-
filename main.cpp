@@ -13,9 +13,11 @@ void show() {
     slu->Do(2, 2);
     slu->Do(7, 9);
     slu->Do(7, 6);
-    // slu->Do(7, 9);
-    // slu->Do(7, 5);
-    // slu->Do(1, 13);
+    slu->Do(6, 9);
+    slu->Do(4, 4);
+    slu->Do(3, 3);
+    auto[v, status] = slu->Ending();
+    cout << "ENDING " << v  << endl;
     if (1) {
         auto ret = slu->Search(5);
         for (size_t i = 0; i < 3 && i < ret.size(); ++i) {
@@ -50,6 +52,7 @@ void show() {
             cout << " 黑:" << int(slu->PatternInfo().pattern_cnt_blk[i]);
             cout << "白:" << int(slu->PatternInfo().pattern_cnt_wht[i]) << std::endl;
         }
+        slu->Show(15, {ret.front().first});
     }
 }
 int main() {

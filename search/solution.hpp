@@ -51,6 +51,41 @@ class Solution {
     virtual MovsTy GetDoChain() const = 0;
     virtual void Undo() = 0;
     virtual BOARD_VAL Get(int i, int j) const = 0;
+    void Show(int size, MovsTy highlight) const {
+        set_type<int> highlightSet;
+        for(auto[x,y]:highlight) {
+            highlightSet.insert(x*size+y);
+        }
+        cout << "   ";
+        for(int i = 0; i < size; ++i) {
+            cout << (i<10?"0":"") << i << " ";
+        }
+        cout << endl;
+        for(int i = 0; i < size; ++i) {
+            cout << (i<10?"0":"") << i << " ";
+            for(int j = 0; j < size; ++j) {
+                auto[x,y] = GetDoChain().back();
+                BOARD_VAL v = Get(i,j);
+                std::string s = i==x&&j==y?"^":" ";
+                std::string highlightStr = highlightSet.count(i*size+j)?"!":" ";
+                switch (v) {
+                case BOARD_VAL::BLK:
+                    cout << s << "O" << s;
+                    break;
+                case BOARD_VAL::WHT:
+                    cout << s << "X" << s;
+                    break;
+                case BOARD_VAL::EMP:
+                    cout << "[" << highlightStr << "]";
+                    break;
+                default:
+                    break;
+                }
+            }
+            cout << endl;
+        }
+    }
+    virtual MovsTy Moves(bool must = false) = 0;
     virtual void StopSearch() = 0;
     virtual void StartSearch() = 0;
     virtual bool IsStop() = 0;
@@ -144,6 +179,9 @@ class solution : public Solution {
             ret.push_back({d.i, d.j});
         }
         return ret;
+    }
+    virtual MovsTy Moves(bool must = false) {
+        return board.Moves(must);
     }
     virtual BOARD_VAL Get(int i, int j) const { return board.Get(i, j); }
     virtual std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> GetPatternType(
