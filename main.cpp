@@ -93,7 +93,7 @@ void CLI() {
     };
     while (true) {
         fresh();
-        if(ABS(score) == chis::WON) {
+        if (ABS(score) == chis::WON) {
             cin.get();
         }
         if (auto [val, status] = slu->Ending(); status == chis::GAME_STATUS::ENDING) {
@@ -105,7 +105,7 @@ void CLI() {
             break;
         }
         //电脑对战 或者
-        if(first > 2 || (first == 1) == (slu->Turn() == chis::BOARD_VAL::BLK) ){
+        if (first > 2 || (first == 1) == (slu->Turn() == chis::BOARD_VAL::BLK)) {
             auto ret = slu->Search(6);
             for (size_t i = 0; i < 3 && i < ret.size(); ++i) {
                 highlight.push_back(ret[i].first);
@@ -114,10 +114,10 @@ void CLI() {
             }
             slu->Do(highlight.front());  //落子
             score = ret.front().second;
-        } else  {
+        } else {
             int x, y;
             cin >> x >> y;
-            if(x == -1 || y == -1) {
+            if (x == -1 || y == -1) {
                 slu->Undo();
                 slu->Undo();
             } else {

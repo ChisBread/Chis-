@@ -53,7 +53,7 @@ class Solution {
         auto rets_future = std::async(std::launch::async, [&]() { return Search(MAX_DEPTH); });
         std::future_status status;
         do {
-            status = rets_future.wait_for(std::chrono::milliseconds(timeout_turn>50?timeout_turn-50:timeout_turn));
+            status = rets_future.wait_for(std::chrono::milliseconds(timeout_turn > 50 ? timeout_turn - 50 : timeout_turn));
             if (status == std::future_status::deferred) {
                 StopSearch();
             } else if (status == std::future_status::timeout) {
@@ -272,7 +272,7 @@ class solution : public Solution {
                     //     force = 1;
                     //     break;
                     default:
-                        force = 0;             //停止延伸
+                        force = 0;  //停止延伸
                         break;
                 }
                 if (force == 0 || depth < -2) {  //强制搜索最多一层
