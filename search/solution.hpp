@@ -21,6 +21,9 @@ struct ttInfo {
     //节点的最好着法
     std::tuple<int, int> bestMove = {-1, -1};
 };
+struct dttInfo {
+    ttInfo d[2];//double ttinfo 0:deepest 1:newest
+};
 //统计信息
 struct statInfo {
     size_t leaf_cnt = 0;              //叶节点计数
@@ -153,7 +156,7 @@ class Solution {
 template <typename Board>
 class solution : public Solution {
    public:
-    solution(size_t MEM_BYTE = 128000000) : TT_SIZE(MEM_BYTE / sizeof(ttInfo)), TT(MEM_BYTE / sizeof(ttInfo)) {}
+    solution(size_t MEM_BYTE = 128000000) : TT_SIZE(MEM_BYTE / sizeof(dttInfo)), TT(MEM_BYTE / sizeof(dttInfo)) {}
 
    public:  //以下方法都是线程不安全的，一个线程建议就搞一个实例
     //搜索算法: Min-Max
@@ -211,7 +214,12 @@ class solution : public Solution {
         //命中缓存
         int maxVal = INT32_MIN;
         std::tuple<int, int> bestMove = {-1, -1};
-        if (ttInfo tt = TT[board.Hash() % TT_SIZE]; tt.key == board.Hash()) {
+        dttInfo dtt = TT[board.Hash() % TT_SIZE];
+        for (int i = 0; i < 2; ++i) {
+            ttInfo tt = dtt.d[i];
+            if (tt.key != board.Hash()) {
+                continue;
+            }
             ++stat.tt_hit_cnt;  //命中key
             //如果是结束，则直接选用
             if (tt.rel == RELATION_VAL::END) {
@@ -237,21 +245,27 @@ class solution : public Solution {
                 }
             }
         }
+        
         auto record_tt = [&](uint64_t key, int dp, RELATION_VAL rel, int value, std::tuple<int, int> mov) {
             //深度优先替换
-            if (TT[key % TT_SIZE].depth <= dp) {
-                if (value == WON || value == -WON) {
+            if (value == WON || value == -WON) {
+                ++stat.tt_record_ending_cnt;
+                TT[key % TT_SIZE].d[1] = {key, dp, RELATION_VAL::END, value, mov};
+                if (TT[key % TT_SIZE].d[0].depth <= dp) {
                     ++stat.tt_record_ending_cnt;
-                    TT[key % TT_SIZE] = {key, dp, RELATION_VAL::END, value, mov};
-                } else if (!isZeroWin) {  //非零窗口
+                    TT[key % TT_SIZE].d[0] = {key, dp, RELATION_VAL::END, value, mov};
+                }
+            } else if (!isZeroWin) {  //非零窗口
+                ++stat.tt_record_cnt;
+                TT[key % TT_SIZE].d[1] = {key, dp, rel, value, mov};
+                if (TT[key % TT_SIZE].d[0].depth <= dp) {
                     ++stat.tt_record_cnt;
-                    TT[key % TT_SIZE] = {key, dp, rel, value, mov};
+                    TT[key % TT_SIZE].d[0] = {key, dp, rel, value, mov};
                 }
             }
             // TODO 时效优先替换
         };
-        {
-            //叶子节点
+        {//叶子节点
             auto [val, status] = board.Ending();
             if (status == GAME_STATUS::ENDING) {
                 if (force) {
@@ -268,16 +282,16 @@ class solution : public Solution {
                     case GAME_STATUS::DEFEND:  //防守延伸
                         force = 1;
                         break;
-                    // case GAME_STATUS::ATTACK:  //进攻延伸
-                    //     force = 1;
-                    //     break;
+                     case GAME_STATUS::ATTACK:  //进攻延伸
+                        force = 1;
+                        break;
                     default:
                         force = 0;  //停止延伸
                         break;
                 }
                 if (force == 0 || depth < -2) {  //强制搜索最多一层
                     ++stat.leaf_cnt;
-                    int val = board.Evaluation();
+                    int val = board.Evaluation()+depth*50;
                     return val;
                 }
             }
@@ -362,9 +376,9 @@ class solution : public Solution {
     virtual std::tuple<int, GAME_STATUS> Ending() { return board.Ending(); }
     virtual void Reset(size_t MEM_BYTE = 128000000) {
         board.Reset();
-        TT_SIZE = MEM_BYTE / sizeof(ttInfo);
-        { vector_type<ttInfo>().swap(TT); }
-        TT = vector_type<ttInfo>(TT_SIZE);
+        TT_SIZE = MEM_BYTE / sizeof(dttInfo);
+        { vector_type<dttInfo>().swap(TT); }
+        TT = vector_type<dttInfo>(TT_SIZE);
     }
 
    public:
@@ -387,7 +401,7 @@ class solution : public Solution {
     Board board;
     /////////置换表//////////
     size_t TT_SIZE;
-    vector_type<ttInfo> TT;
+    vector_type<dttInfo> TT;
     ///////锁与搜索指针///////
     std::mutex ABPtrMtx;
     int (solution<Board>::*AlphaBetaPtr)(int, int, int, int) = &solution<Board>::AlphaBeta;

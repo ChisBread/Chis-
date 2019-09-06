@@ -245,8 +245,8 @@ class GomokuBoard {
                     //对方 33
                 } else if (enemy_info[PAT_TYPE::L3A] + enemy_info[PAT_TYPE::L3B] > 1) {
                     item.second = WON + 5;
-                    //己方 冲4
-                } else if (me_info[PAT_TYPE::S4]) {
+                    //己方 冲4或成3
+                } else if (me_info[PAT_TYPE::S4] || me_info[PAT_TYPE::L3A] || me_info[PAT_TYPE::L3A]) {
                     item.second = WON + 4;
                 }
                 // val >= WON+8 | 不考虑冲4，以val截断
@@ -257,15 +257,11 @@ class GomokuBoard {
         vector_type<std::tuple<int, int>> ret;
         //存在成5
         if (sorted.front().second >= WON + 8) {
-            return {sorted.front().first};
-        } else if (sorted.front().second == WON + 7) {
             for (auto &s : sorted) {
                 if (s.second < WON + 4) {
                     break;
                 }
-                if (s.second == WON + 7 || s.second == WON + 4) {
-                    ret.push_back({s.first});
-                }
+                ret.push_back({s.first});
             }
         } else {
             for (auto &s : sorted) {
@@ -276,7 +272,7 @@ class GomokuBoard {
     }
     // 评估函数 NegaEva
     int Evaluation() {
-        static const int evaluation[14] = {0, 1, 10, 12, 30, 35, 40, 45, 100, 120, 230, 1000, 1000, WON};
+        static const int evaluation[14] = {-15, -5, 20, 22, 190, 195, 200, 205, 100, 120, 130, 2000, 2000, WON};
         int val = 0;
         for (int i = 1; i < 14; ++i) {
             val += (pinfo.pattern_cnt_blk[i] * evaluation[i]);
@@ -338,7 +334,7 @@ class GomokuBoard {
                 return {0, GAME_STATUS::DEFEND};
             }
             /********* 进攻 *********/
-            if (A[PAT_TYPE::S3] > 1) {
+            if (A[PAT_TYPE::S3] + A[PAT_TYPE::L2A] + A[PAT_TYPE::L2B] + A[PAT_TYPE::L2C] > 2) {
                 // || A[PAT_TYPE::L2A] || A[PAT_TYPE::L2B] || A[PAT_TYPE::L2C]
                 return {0, GAME_STATUS::ATTACK};
             }

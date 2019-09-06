@@ -89,8 +89,12 @@ class GomocupProto {
         auto rets_future = std::async(std::launch::async, [&]() { return slu->Search(config.MAX_DEPTH); });
         std::future_status status;
         do {
-            status = rets_future.wait_for(
-                std::chrono::milliseconds(config.timeout_turn > 50 ? config.timeout_turn - 50 : config.timeout_turn));
+            int timeX = config.time_left / 6;
+            if (timeX > config.timeout_turn) {
+                timeX = config.timeout_turn;
+			}
+            io.Debug() << "Dynamic time turn:" << timeX << "ms" << endl;
+            status = rets_future.wait_for(std::chrono::milliseconds(timeX > 30 ? timeX - 30 : timeX));
             if (status == std::future_status::deferred) {
                 io.Debug() << "Search Deferred" << std::endl;
                 slu->StopSearch();
@@ -156,8 +160,12 @@ class GomocupProto {
         io << i << "," << j << std::endl;
         return 0;
     }
+    int Reset() { 
+		slu->Reset(config.max_memory * 0.8);
+		return 0;
+	}
     int Board() {
-        Restart();
+        Reset();
         std::string line;
         while (getline(io.inputer, line)) {
             if (line.empty()) {
@@ -198,7 +206,7 @@ class GomocupProto {
             config.max_memory = atoi(val.c_str());
             io.Debug() << "accepted max_memory:" << config.max_memory << endl;
             auto dos = slu->GetDoChain();
-            Restart();  //重设内存
+            Reset();  //重设内存
             slu->Do(dos);
             io.Debug() << "mem reset" << endl;
         } else if (key == "time_left") {
@@ -216,8 +224,9 @@ class GomocupProto {
         }
         return 0;
     }
-    int Restart() {
-        slu->Reset(config.max_memory * 0.8);
+    int Restart() { 
+		Reset();
+        io << "OK" << std::endl;
         return 0;
     }
     int Takeback() {
@@ -281,8 +290,8 @@ class GomocupProto {
                 continue;
             }
             io.Debug() << "GLOBAL PATTERN " << patternName[i];
-            io.Debug() << " 黑:" << int(slu->PatternInfo().pattern_cnt_blk[i]);
-            io.Debug() << "白:" << int(slu->PatternInfo().pattern_cnt_wht[i]) << std::endl;
+            io << " 黑:" << int(slu->PatternInfo().pattern_cnt_blk[i]);
+            io << "白:" << int(slu->PatternInfo().pattern_cnt_wht[i]) << std::endl;
         }
         return 0;
     }
