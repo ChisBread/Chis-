@@ -40,6 +40,8 @@ struct statInfo {
     size_t bestmove_pass_cnt = 0;     // bestmove截断
     size_t pvs_try_cnt = 0;           //主要变例搜索计数
     size_t pvs_pass_cnt = 0;          //主要变例剪枝
+    size_t pvs_root_try_cnt = 0;           //主要变例搜索计数
+    size_t pvs_root_pass_cnt = 0;          //主要变例剪枝
     size_t extend_try_cnt = 0;        //延伸节点计数
     size_t extend_ending_cnt = 0;     //延伸杀局计数
 };
@@ -176,7 +178,17 @@ class solution : public Solution {
                 auto [i, j] = mov.first;
                 board.Do(i, j);  //落子
                 int val;
-                val = -AlphaBeta(-beta, -alpha, depth);
+                if(alpha == -WON) {        
+                    val = -AlphaBeta(-beta, -alpha, depth);
+                } else {
+                    ++stat.pvs_root_try_cnt;
+                    val = -AlphaBeta(-alpha-1, -alpha, depth);
+                    if (val > alpha && val < beta) {
+                        val = -AlphaBeta(-beta, -alpha, depth);
+                    } else {
+                        ++stat.pvs_root_pass_cnt;
+                    }
+                }
                 board.Undo();
                 mov.second = val;
                 if (val >= beta) {

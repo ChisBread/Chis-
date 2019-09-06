@@ -72,6 +72,8 @@ void CLI() {
              << "最佳着法剪枝" << slu->stat.bestmove_pass_cnt << endl
              << "主要变例搜索尝试" << slu->stat.pvs_try_cnt << endl
              << "主要变例搜索剪枝" << slu->stat.pvs_pass_cnt << endl
+             << "主要变例搜索尝试(ROOT)" << slu->stat.pvs_root_try_cnt << endl
+             << "主要变例搜索剪枝(ROOT)" << slu->stat.pvs_root_pass_cnt << endl
              << "延伸节点" << slu->stat.extend_try_cnt << endl
              << "延伸杀棋节点" << slu->stat.extend_ending_cnt << endl
              << "总节点数" << slu->stat.node_cnt << endl;
@@ -105,7 +107,7 @@ void CLI() {
             break;
         }
         //电脑对战 或者
-        if (first > 2 || (first == 1) == (slu->Turn() == chis::BOARD_VAL::BLK)) {
+        if (first > 2 || (first == 1) != (slu->Turn() == chis::BOARD_VAL::BLK)) {
             auto ret = slu->Search(6);
             for (size_t i = 0; i < 3 && i < ret.size(); ++i) {
                 highlight.push_back(ret[i].first);

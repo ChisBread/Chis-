@@ -272,7 +272,7 @@ class GomokuBoard {
     }
     // 评估函数 NegaEva
     int Evaluation() {
-        static const int evaluation[14] = {-15, -5, 20, 22, 190, 195, 200, 205, 100, 120, 130, 2000, 2000, WON};
+        static const int evaluation[14] = {-5, 5, 15, 45, 180, 190, 200, 280, 485, 520, 580, 850, 900, WON};
         int val = 0;
         for (int i = 1; i < 14; ++i) {
             val += (pinfo.pattern_cnt_blk[i] * evaluation[i]);
@@ -334,7 +334,7 @@ class GomokuBoard {
                 return {0, GAME_STATUS::DEFEND};
             }
             /********* 进攻 *********/
-            if (A[PAT_TYPE::S3] + A[PAT_TYPE::L2A] + A[PAT_TYPE::L2B] + A[PAT_TYPE::L2C] > 2) {
+            if (A[PAT_TYPE::S3] || A[PAT_TYPE::L3A] || A[PAT_TYPE::L3B]) {
                 // || A[PAT_TYPE::L2A] || A[PAT_TYPE::L2B] || A[PAT_TYPE::L2C]
                 return {0, GAME_STATUS::ATTACK};
             }
