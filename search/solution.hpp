@@ -421,7 +421,7 @@ class solution : public Solution {
     /////////棋盘+知识///////
     Board board;
     /////////配置项//////////
-    int extend_depth = -5;//用负数来表示延伸（水平线以下）
+    int extend_depth = -12;//用负数来表示延伸（水平线以下）
     /////////置换表//////////
     size_t TT_SIZE;
     vector_type<dttInfo> TT;
