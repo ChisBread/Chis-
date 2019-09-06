@@ -214,13 +214,13 @@ class solution : public Solution {
         }
         return moves;
     }
-    int AlphaBetaEnd(int alpha, int beta, int depth, int force) {
+    int AlphaBetaEnd(int alpha, int beta, int depth) {
         return alpha;  //跳到叶节点
     }
-    int AlphaBeta(int alpha, int beta, int depth, int force = 0) {
+    int AlphaBeta(int alpha, int beta, int depth) {
         bool isZeroWin = ABS(beta - alpha) == 1;
         ++stat.node_cnt;
-        if (force) {
+        if (depth < 0) {
             ++stat.extend_try_cnt;
         }
         //命中缓存
@@ -280,7 +280,7 @@ class solution : public Solution {
         {//叶子节点
             auto [val, status] = board.Ending();
             if (status == GAME_STATUS::ENDING) {
-                if (force) {
+                if (depth < 0) {
                     ++stat.extend_ending_cnt;
                 }
                 ++stat.leaf_cnt;
@@ -290,20 +290,29 @@ class solution : public Solution {
                 return val;
             }
             if (depth <= 0) {  //终结或者延伸
-                switch (status) {
-                    case GAME_STATUS::DEFEND:  //防守延伸
-                        force = 1;
-                        break;
-                     case GAME_STATUS::ATTACK:  //进攻延伸
-                        force = 1;
-                        break;
-                    default:
-                        force = 0;  //停止延伸
-                        break;
+                //当前节点如果是上层的pv节点，则考虑是否延伸
+                //为什么这么设计？ 
+                //假设AI的PV路径就是真实最优路径。那非PV的路径算了也没有意义，因为如果对手走了这条路本身就是次优的。
+                //假设AI的PV路径不是真实最优路径。算杀可以帮助其找到真实的路径。
+                bool force = false;
+                int val = board.Evaluation();
+                if(depth >= extend_depth) {//check是否延伸
+                    if(val > -beta && val < -alpha) {//是否PV
+                        switch (status) {
+                        case GAME_STATUS::DEFEND:  //防守延伸
+                            force = true;
+                            break;
+                        case GAME_STATUS::ATTACK:  //进攻延伸
+                            force = true;
+                            break;
+                        default://停止延伸
+                            break;
+                        }
+                    }
                 }
-                if (force == 0 || depth < -2) {  //强制搜索最多一层
+                //不能延伸
+                if (!force) {
                     ++stat.leaf_cnt;
-                    int val = board.Evaluation()+depth*50;
                     return val;
                 }
             }
@@ -321,14 +330,14 @@ class solution : public Solution {
                 //如果已经找到PV, 则后续节点使用PVS
                 if (foundPV) {
                     ++stat.pvs_try_cnt;
-                    val = -(this->*AlphaBetaPtr)(-alpha - 1, -alpha, next_depth, force);
+                    val = -(this->*AlphaBetaPtr)(-alpha - 1, -alpha, next_depth);
                     if (val > alpha && val < beta) {
-                        val = -(this->*AlphaBetaPtr)(-beta, -alpha, next_depth, force);
+                        val = -(this->*AlphaBetaPtr)(-beta, -alpha, next_depth);
                     } else {
                         ++stat.pvs_pass_cnt;
                     }
                 } else {
-                    val = -(this->*AlphaBetaPtr)(-beta, -alpha, next_depth, force);
+                    val = -(this->*AlphaBetaPtr)(-beta, -alpha, next_depth);
                 }
                 if (val >= beta) {
                     return {val, true};
@@ -411,12 +420,14 @@ class solution : public Solution {
    public:
     /////////棋盘+知识///////
     Board board;
+    /////////配置项//////////
+    int extend_depth = -5;//用负数来表示延伸（水平线以下）
     /////////置换表//////////
     size_t TT_SIZE;
     vector_type<dttInfo> TT;
     ///////锁与搜索指针///////
     std::mutex ABPtrMtx;
-    int (solution<Board>::*AlphaBetaPtr)(int, int, int, int) = &solution<Board>::AlphaBeta;
+    int (solution<Board>::*AlphaBetaPtr)(int, int, int) = &solution<Board>::AlphaBeta;
 };
 Solution *MakeSolution(size_t size, size_t MEM_BYTE = 128000000) {
     switch (size) {

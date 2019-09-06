@@ -18,7 +18,7 @@ struct GomocupConfig {
     int rule = 0;                // 规则
     std::string folder;          // 目录
 
-    int MAX_DEPTH = 5;
+    int MAX_DEPTH = 7;
 };
 inline std::string upperstr(const std::string &str) {
     std::string ret = str;

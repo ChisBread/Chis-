@@ -108,7 +108,7 @@ void CLI() {
         }
         //电脑对战 或者
         if (first > 2 || (first == 1) != (slu->Turn() == chis::BOARD_VAL::BLK)) {
-            auto ret = slu->Search(6);
+            auto ret = slu->Search(7);
             for (size_t i = 0; i < 3 && i < ret.size(); ++i) {
                 highlight.push_back(ret[i].first);
                 auto [x, y] = ret[i].first;

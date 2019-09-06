@@ -110,12 +110,15 @@ class GomokuBoard {
                             if (sameCenter && diffCenter) {
                                 break;
                             }
-                        }
-                        //如果nbrate不收影响(没有遇到非空点)
-                        if (impactNb) {
+                        } else {
+                            //如果nbrate不收影响(没有遇到非空点)
+                            if (impactNb) {
                             // xn,yn距离为l的棋子+1
                             ++minfo.nbrate[xn + offset][yn + offset][l];
+                            }
                         }
+                        
+                        
                     }
                 }
             }
@@ -272,7 +275,18 @@ class GomokuBoard {
     }
     // 评估函数 NegaEva
     int Evaluation() {
-        static const int evaluation[14] = {-5, 5, 15, 45, 180, 190, 200, 280, 485, 520, 580, 850, 900, WON};
+        static const int evaluation[14] = {
+            -5, 
+            5,  //S1
+            15, //L1
+            45, //S2
+            220, 235, 250, //L2 ABC
+            280, //S3
+            485, 520, //L3
+            580, //S4
+            850, 900, //L4
+            WON
+        };
         int val = 0;
         for (int i = 1; i < 14; ++i) {
             val += (pinfo.pattern_cnt_blk[i] * evaluation[i]);
